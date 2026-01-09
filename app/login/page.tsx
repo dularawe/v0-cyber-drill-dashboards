@@ -1,0 +1,178 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff, LogIn } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+type UserRole = "super-admin" | "xcon" | "leader"
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState<UserRole>("super-admin")
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const user = sessionStorage.getItem("currentUser")
+    if (user) {
+      try {
+        const userData = JSON.parse(user)
+        const routes = {
+          "super-admin": "/super-admin",
+          xcon: "/xcon",
+          leader: "/leader",
+        }
+        router.push(routes[userData.role as UserRole])
+      } catch (e) {
+        sessionStorage.removeItem("currentUser")
+      }
+    }
+  }, [router])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    if (!email || !password) {
+      setError("Please enter email and password")
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Invalid credentials")
+      setLoading(false)
+      return
+    }
+
+    const userData = {
+      email,
+      role,
+      loginTime: new Date().toISOString(),
+    }
+
+    sessionStorage.setItem("currentUser", JSON.stringify(userData))
+
+    const routes = {
+      "super-admin": "/super-admin",
+      xcon: "/xcon",
+      leader: "/leader",
+    }
+
+    router.push(routes[role])
+  }
+
+  return (
+    <main className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center mx-auto mb-4">
+            <span className="text-primary-foreground font-bold text-lg">CD</span>
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Cyber Drill</h1>
+          <p className="text-muted-foreground">Enterprise Security Exercise Platform</p>
+        </div>
+
+        {/* Login Card */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle>Sign In to Your Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Select Your Role</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["super-admin", "xcon", "leader"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
+                        role === r
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {r === "super-admin" ? "Admin" : r === "xcon" ? "X-CON" : "Leader"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>
+              )}
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <LogIn className="h-4 w-4" />
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+
+            {/* Demo Info */}
+            <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 space-y-2">
+              <p className="font-semibold">Demo Credentials (All Roles):</p>
+              <div className="space-y-1">
+                <p>Email: demo@cyberdrill.com</p>
+                <p>Password: Demo123</p>
+              </div>
+              <p className="pt-2 text-blue-700">Select your role above and use these credentials to login.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  )
+}
