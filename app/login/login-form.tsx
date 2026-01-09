@@ -22,6 +22,9 @@ export default function LoginForm() {
   const role = (searchParams.get("role") || "super-admin") as UserRole
 
   useEffect(() => {
+    if (!searchParams.has("role")) {
+      router.push("/")
+    }
     const user = sessionStorage.getItem("currentUser")
     if (user) {
       try {
@@ -36,7 +39,7 @@ export default function LoginForm() {
         sessionStorage.removeItem("currentUser")
       }
     }
-  }, [router])
+  }, [searchParams, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

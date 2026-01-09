@@ -1,5 +1,8 @@
+"use client"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface DashboardHeaderProps {
   title: string
@@ -8,6 +11,13 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, status, userRole }: DashboardHeaderProps) {
+  const router = useRouter()
+
+  const handleSignOut = () => {
+    sessionStorage.removeItem("currentUser")
+    router.push("/")
+  }
+
   return (
     <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4">
@@ -36,7 +46,7 @@ export function DashboardHeader({ title, status, userRole }: DashboardHeaderProp
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </DropdownMenuItem>
