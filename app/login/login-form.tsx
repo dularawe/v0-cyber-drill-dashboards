@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Eye, EyeOff, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { signInUser } from "@/lib/api-client"
 
 type UserRole = "super-admin" | "xcon" | "leader"
 
@@ -46,35 +47,32 @@ export default function LoginForm() {
     setError("")
     setLoading(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    try {
+      const response = await signInUser(email, password, role)
 
-    if (!email || !password) {
-      setError("Please enter email and password")
+      const userData = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        role: response.user.role,
+        session: response.session,
+        loginTime: new Date().toISOString(),
+      }
+
+      sessionStorage.setItem("currentUser", JSON.stringify(userData))
+
+      const routes = {
+        "super-admin": "/super-admin",
+        xcon: "/xcon",
+        leader: "/leader",
+      }
+
+      router.push(routes[role])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed. Please check your credentials.")
+    } finally {
       setLoading(false)
-      return
     }
-
-    if (password.length < 6) {
-      setError("Invalid credentials")
-      setLoading(false)
-      return
-    }
-
-    const userData = {
-      email,
-      role,
-      loginTime: new Date().toISOString(),
-    }
-
-    sessionStorage.setItem("currentUser", JSON.stringify(userData))
-
-    const routes = {
-      "super-admin": "/super-admin",
-      xcon: "/xcon",
-      leader: "/leader",
-    }
-
-    router.push(routes[role])
   }
 
   const getRoleDisplay = (r: UserRole) => {

@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Edit2, Trash2, X } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Users, Clock, FileText } from "lucide-react"
+import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from "@/lib/api-client"
 
 interface Question {
   id: string
@@ -20,6 +21,7 @@ interface Question {
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([])
+  const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
@@ -30,33 +32,58 @@ export default function QuestionsPage() {
     timeLimit: 180,
   })
 
-  const handleAddQuestion = (e: React.FormEvent) => {
-    e.preventDefault()
-    const newQuestion: Question = {
-      id: Date.now().toString(),
-      ...formData,
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await getQuestions()
+        setQuestions(data)
+      } catch (err) {
+        console.error("Failed to fetch questions:", err)
+      } finally {
+        setLoading(false)
+      }
     }
-    setQuestions([...questions, newQuestion])
-    setFormData({
-      text: "",
-      category: "Security Awareness",
-      difficulty: "easy",
-      timeLimit: 180,
-    })
-    setShowAddModal(false)
+    fetchQuestions()
+  }, [])
+
+  const handleAddQuestion = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const newQuestion = await createQuestion(formData)
+      setQuestions([...questions, newQuestion])
+      setFormData({
+        text: "",
+        category: "Security Awareness",
+        difficulty: "easy",
+        timeLimit: 180,
+      })
+      setShowAddModal(false)
+    } catch (err) {
+      console.error("Failed to create question:", err)
+    }
   }
 
-  const handleEditQuestion = (e: React.FormEvent) => {
+  const handleEditQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedQuestion) {
-      setQuestions(questions.map((q) => (q.id === selectedQuestion.id ? { id: selectedQuestion.id, ...formData } : q)))
-      setShowEditModal(false)
-      setSelectedQuestion(null)
+      try {
+        const updated = await updateQuestion(selectedQuestion.id, formData)
+        setQuestions(questions.map((q) => (q.id === selectedQuestion.id ? updated : q)))
+        setShowEditModal(false)
+        setSelectedQuestion(null)
+      } catch (err) {
+        console.error("Failed to update question:", err)
+      }
     }
   }
 
-  const handleDeleteQuestion = (id: string) => {
-    setQuestions(questions.filter((q) => q.id !== id))
+  const handleDeleteQuestion = async (id: string) => {
+    try {
+      await deleteQuestion(id)
+      setQuestions(questions.filter((q) => q.id !== id))
+    } catch (err) {
+      console.error("Failed to delete question:", err)
+    }
   }
 
   const openEditModal = (question: Question) => {
@@ -77,6 +104,17 @@ export default function QuestionsPage() {
     { label: "Participants", href: "/super-admin/participants", icon: <Users className="h-5 w-5" />, active: false },
     { label: "Reports", href: "/super-admin/reports", icon: <Clock className="h-5 w-5" />, active: false },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <DashboardSidebar items={sidebarItems} />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading questions...</p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">

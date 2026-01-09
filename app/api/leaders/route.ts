@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-
-const leaders: any[] = []
+import { db } from "@/lib/db"
 
 export async function GET() {
   try {
+    const leaders = db.getLeaders()
     return NextResponse.json(leaders, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
@@ -20,20 +20,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const leader = {
-      id: `leader_${Date.now()}`,
+    const leader = db.createLeader({
       email,
       name,
       password,
       assignedXconId,
       team: team || "",
-      score: 0,
-      correctAnswers: 0,
-      totalAnswers: 0,
-      created_at: new Date().toISOString(),
-    }
+    })
 
-    leaders.push(leader)
     return NextResponse.json(leader, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"

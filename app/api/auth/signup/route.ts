@@ -1,26 +1,30 @@
 import { NextResponse } from "next/server"
-
-const users = new Map()
+import { db } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
     const { email, password, name, role } = await request.json()
 
-    if (!email || !password || !name) {
-      return NextResponse.json({ error: "Email, password, and name required" }, { status: 400 })
+    if (!email || !password || !name || !role) {
+      return NextResponse.json({ error: "Email, password, name, and role required" }, { status: 400 })
     }
 
-    if (users.has(email)) {
+    const existingUser = db.getUserByEmail(email)
+    if (existingUser) {
       return NextResponse.json({ error: "Email already exists" }, { status: 400 })
     }
 
-    const id = `user_${Date.now()}`
-    users.set(email, { id, email, password, name, role })
+    const user = db.createUser({
+      email,
+      password,
+      name,
+      role: role as "super-admin" | "xcon" | "leader",
+    })
 
     return NextResponse.json(
       {
         success: true,
-        user: { id, email, name, role },
+        user: { id: user.id, email: user.email, name: user.name, role: user.role },
       },
       { status: 201 },
     )

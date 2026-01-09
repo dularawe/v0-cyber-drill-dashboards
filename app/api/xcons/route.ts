@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-
-const xcons: any[] = []
+import { db } from "@/lib/db"
 
 export async function GET() {
   try {
+    const xcons = db.getXCons()
     return NextResponse.json(xcons, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
@@ -20,18 +20,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const xcon = {
-      id: `xcon_${Date.now()}`,
+    const xcon = db.createXCon({
       email,
       name,
       password,
       team: team || "",
-      assignedLeaders: 0,
-      reviewsCompleted: 0,
-      created_at: new Date().toISOString(),
-    }
+    })
 
-    xcons.push(xcon)
     return NextResponse.json(xcon, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"

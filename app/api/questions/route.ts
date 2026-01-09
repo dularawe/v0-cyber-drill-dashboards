@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-
-const questions: any[] = []
+import { db } from "@/lib/db"
 
 export async function GET() {
   try {
+    const questions = db.getQuestions()
     return NextResponse.json(questions, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
@@ -20,16 +20,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const question = {
-      id: `q_${Date.now()}`,
+    const question = db.createQuestion({
       text,
       category,
       difficulty,
       timeLimit,
-      created_at: new Date().toISOString(),
-    }
+    })
 
-    questions.push(question)
     return NextResponse.json(question, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"

@@ -1,23 +1,22 @@
 import { NextResponse } from "next/server"
-
-const answers: any[] = []
+import { db } from "@/lib/db"
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const answerIndex = answers.findIndex((a) => a.id === params.id)
-    if (answerIndex === -1) {
+    const body = await request.json()
+    const { reviewedBy } = body
+
+    const answer = db.updateAnswer(params.id, {
+      status: "rejected",
+      reviewedAt: new Date().toISOString(),
+      reviewedBy,
+    })
+
+    if (!answer) {
       return NextResponse.json({ error: "Answer not found" }, { status: 404 })
     }
 
-    const body = await request.json()
-    answers[answerIndex] = {
-      ...answers[answerIndex],
-      status: "rejected",
-      feedback: body.feedback || null,
-      reviewed_at: new Date().toISOString(),
-    }
-
-    return NextResponse.json({ success: true, answer: answers[answerIndex] }, { status: 200 })
+    return NextResponse.json({ success: true, answer }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })

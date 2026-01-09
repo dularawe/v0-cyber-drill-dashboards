@@ -1,30 +1,53 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  }
+
+  const response = await fetch(url, { ...options, headers })
+  if (response.status === 401) {
+    typeof window !== "undefined" && localStorage.removeItem("auth_token")
+  }
+  return response
+}
 
 // Auth functions
 export async function signInUser(email: string, password: string, role: string) {
-  const response = await fetch(`${API_BASE}/auth/signin`, {
+  const response = await fetchWithAuth(`${API_BASE}/auth/signin`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, role }),
+    body: JSON.stringify({ email, password }),
   })
   if (!response.ok) throw new Error("Sign in failed")
-  return response.json()
+  const data = await response.json()
+  if (typeof window !== "undefined" && data.token) {
+    localStorage.setItem("auth_token", data.token)
+  }
+  return data
 }
 
 export async function signUpUser(email: string, password: string, name: string, role: string) {
-  const response = await fetch(`${API_BASE}/auth/signup`, {
+  const response = await fetchWithAuth(`${API_BASE}/auth/signup`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, name, role }),
   })
   if (!response.ok) throw new Error("Sign up failed")
-  return response.json()
+  const data = await response.json()
+  if (typeof window !== "undefined" && data.token) {
+    localStorage.setItem("auth_token", data.token)
+  }
+  return data
 }
 
-export async function signOutUser(session: string) {
-  const response = await fetch(`${API_BASE}/auth/signout`, {
+export async function signOutUser() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth_token")
+  }
+  const response = await fetchWithAuth(`${API_BASE}/auth/signout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${session}` },
   })
   if (!response.ok) throw new Error("Sign out failed")
   return response.json()

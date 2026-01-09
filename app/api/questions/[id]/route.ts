@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
-
-const questions: any[] = []
+import { db } from "@/lib/db"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const question = questions.find((q) => q.id === params.id)
+    const question = db.getQuestionById(params.id)
     if (!question) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 })
     }
@@ -17,15 +16,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const questionIndex = questions.findIndex((q) => q.id === params.id)
-    if (questionIndex === -1) {
+    const body = await request.json()
+    const question = db.updateQuestion(params.id, body)
+
+    if (!question) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 })
     }
 
-    const body = await request.json()
-    questions[questionIndex] = { ...questions[questionIndex], ...body, updated_at: new Date().toISOString() }
-
-    return NextResponse.json(questions[questionIndex], { status: 200 })
+    return NextResponse.json(question, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })
@@ -34,12 +32,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const index = questions.findIndex((q) => q.id === params.id)
-    if (index === -1) {
+    const success = db.deleteQuestion(params.id)
+    if (!success) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 })
     }
 
-    questions.splice(index, 1)
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"

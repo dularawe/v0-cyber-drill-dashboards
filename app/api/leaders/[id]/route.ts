@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
-
-const leaders: any[] = []
+import { db } from "@/lib/db"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const leader = leaders.find((l) => l.id === params.id)
+    const leader = db.getLeaderById(params.id)
     if (!leader) {
       return NextResponse.json({ error: "Leader not found" }, { status: 404 })
     }
@@ -17,15 +16,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const leaderIndex = leaders.findIndex((l) => l.id === params.id)
-    if (leaderIndex === -1) {
+    const body = await request.json()
+    const leader = db.updateLeader(params.id, body)
+
+    if (!leader) {
       return NextResponse.json({ error: "Leader not found" }, { status: 404 })
     }
 
-    const body = await request.json()
-    leaders[leaderIndex] = { ...leaders[leaderIndex], ...body, updated_at: new Date().toISOString() }
-
-    return NextResponse.json(leaders[leaderIndex], { status: 200 })
+    return NextResponse.json(leader, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })
@@ -34,12 +32,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const index = leaders.findIndex((l) => l.id === params.id)
-    if (index === -1) {
+    const success = db.deleteLeader(params.id)
+    if (!success) {
       return NextResponse.json({ error: "Leader not found" }, { status: 404 })
     }
 
-    leaders.splice(index, 1)
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
