@@ -21,37 +21,9 @@ interface Participant {
 }
 
 export default function ParticipantsPage() {
-  const [participants, setParticipants] = useState<Participant[]>([
-    {
-      id: "1",
-      name: "Sarah Chen",
-      email: "sarah@company.com",
-      password: "Sarah@2024",
-      team: "Team Alpha",
-      xconAssigned: "Team Alpha Lead",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Marcus Johnson",
-      email: "marcus@company.com",
-      password: "Marcus@2024",
-      team: "Team Alpha",
-      xconAssigned: "Team Alpha Lead",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Emma Wilson",
-      email: "emma@company.com",
-      password: "Emma@2024",
-      team: "Team Beta",
-      xconAssigned: "Team Beta Lead",
-      status: "active",
-    },
-  ])
+  const [participants, setParticipants] = useState<Participant[]>([])
 
-  const availableXCons = ["Team Alpha Lead", "Team Beta Lead", "Team Gamma Lead"]
+  const availableXCons: string[] = []
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showPassword, setShowPassword] = useState(false)

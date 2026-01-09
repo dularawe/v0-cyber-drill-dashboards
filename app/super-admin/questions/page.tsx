@@ -19,23 +19,7 @@ interface Question {
 }
 
 export default function QuestionsPage() {
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: "1",
-      text: "What is a common phishing indicator?",
-      category: "Security Awareness",
-      difficulty: "easy",
-      timeLimit: 180,
-    },
-    {
-      id: "2",
-      text: "How do you verify the authenticity of an email sender?",
-      category: "Email Security",
-      difficulty: "medium",
-      timeLimit: 240,
-    },
-  ])
-
+  const [questions, setQuestions] = useState<Question[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)

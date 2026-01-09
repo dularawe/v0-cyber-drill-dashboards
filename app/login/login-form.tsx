@@ -156,10 +156,10 @@ export default function LoginForm() {
 
             {/* Demo Info */}
             <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 space-y-2">
-              <p className="font-semibold">Demo Credentials:</p>
+              <p className="font-semibold">Admin Demo Login:</p>
               <div className="space-y-1">
-                <p>Email: demo@cyberdrill.com</p>
-                <p>Password: Demo123</p>
+                <p>Email: admin@cyberdrill.com</p>
+                <p>Password: Admin@2024</p>
               </div>
             </div>
 

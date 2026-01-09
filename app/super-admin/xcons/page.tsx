@@ -20,7 +20,9 @@ interface XCon {
 }
 
 export default function XConsPage() {
-  const [xcons, setXcons] = useState<XCon[]>([
+  const [xcons, setXcons] = useState<XCon[]>([])
+
+  const availableXCons: XCon[] = [
     {
       id: "1",
       name: "Team Alpha Lead",
@@ -45,7 +47,7 @@ export default function XConsPage() {
       assignedLeaders: 5,
       status: "inactive",
     },
-  ])
+  ]
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
