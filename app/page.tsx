@@ -1,34 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight, Shield, Users, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    const user = sessionStorage.getItem("currentUser")
-    if (user) {
-      try {
-        const userData = JSON.parse(user)
-        const routes = {
-          "super-admin": "/super-admin",
-          xcon: "/xcon",
-          leader: "/leader",
-        }
-        router.push(routes[userData.role])
-      } catch (e) {
-        sessionStorage.removeItem("currentUser")
-      }
-    } else {
-      router.push("/login")
-    }
-  }, [router])
-
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
@@ -76,7 +53,7 @@ export default function Home() {
                 <li>✓ X-CON team management</li>
                 <li>✓ Global leaderboard monitoring</li>
               </ul>
-              <Link href="/login" className="inline-block w-full mt-4">
+              <Link href="/login?role=super-admin" className="inline-block w-full mt-4">
                 <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground group-hover:translate-x-1 transition">
                   Enter as Super Admin
                   <ArrowRight className="h-4 w-4" />
@@ -105,7 +82,7 @@ export default function Home() {
                 <li>✓ Progress tracking</li>
                 <li>✓ Review history</li>
               </ul>
-              <Link href="/login" className="inline-block w-full mt-4">
+              <Link href="/login?role=xcon" className="inline-block w-full mt-4">
                 <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground group-hover:translate-x-1 transition">
                   Enter as X-CON
                   <ArrowRight className="h-4 w-4" />
@@ -134,7 +111,7 @@ export default function Home() {
                 <li>✓ Attempt management</li>
                 <li>✓ Live leaderboard</li>
               </ul>
-              <Link href="/login" className="inline-block w-full mt-4">
+              <Link href="/login?role=leader" className="inline-block w-full mt-4">
                 <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground group-hover:translate-x-1 transition">
                   Enter as Participant
                   <ArrowRight className="h-4 w-4" />
