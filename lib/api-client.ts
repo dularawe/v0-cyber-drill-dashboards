@@ -1,141 +1,223 @@
-import { createClient } from "@/lib/supabase/client"
-import type { Question, Answer, DrillSession, Leader, XCon } from "@/lib/types"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
 
-const supabase = createClient()
+// Auth functions
+export async function signInUser(email: string, password: string, role: string) {
+  const response = await fetch(`${API_BASE}/auth/signin`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, role }),
+  })
+  if (!response.ok) throw new Error("Sign in failed")
+  return response.json()
+}
 
-// Questions API
+export async function signUpUser(email: string, password: string, name: string, role: string) {
+  const response = await fetch(`${API_BASE}/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, name, role }),
+  })
+  if (!response.ok) throw new Error("Sign up failed")
+  return response.json()
+}
+
+export async function signOutUser(session: string) {
+  const response = await fetch(`${API_BASE}/auth/signout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session}` },
+  })
+  if (!response.ok) throw new Error("Sign out failed")
+  return response.json()
+}
+
+// Questions
 export async function getQuestions() {
-  const { data, error } = await supabase.from("questions").select("*").order("created_at", { ascending: false })
-  if (error) throw error
-  return data as Question[]
+  const response = await fetch(`${API_BASE}/questions`)
+  if (!response.ok) throw new Error("Failed to fetch questions")
+  return response.json()
 }
 
-export async function createQuestion(question: Omit<Question, "id" | "created_at" | "updated_at">) {
-  const { data, error } = await supabase.from("questions").insert([question]).select().single()
-  if (error) throw error
-  return data as Question
+export async function createQuestion(question: any) {
+  const response = await fetch(`${API_BASE}/questions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(question),
+  })
+  if (!response.ok) throw new Error("Failed to create question")
+  return response.json()
 }
 
-export async function updateQuestion(id: string, updates: Partial<Question>) {
-  const { data, error } = await supabase.from("questions").update(updates).eq("id", id).select().single()
-  if (error) throw error
-  return data as Question
+export async function updateQuestion(id: string, updates: any) {
+  const response = await fetch(`${API_BASE}/questions/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) throw new Error("Failed to update question")
+  return response.json()
 }
 
 export async function deleteQuestion(id: string) {
-  const { error } = await supabase.from("questions").delete().eq("id", id)
-  if (error) throw error
+  const response = await fetch(`${API_BASE}/questions/${id}`, { method: "DELETE" })
+  if (!response.ok) throw new Error("Failed to delete question")
+  return response.json()
 }
 
-// Leaders API
+// Leaders
 export async function getLeaders() {
-  const { data, error } = await supabase.from("leaders").select("*").order("created_at", { ascending: false })
-  if (error) throw error
-  return data as Leader[]
+  const response = await fetch(`${API_BASE}/leaders`)
+  if (!response.ok) throw new Error("Failed to fetch leaders")
+  return response.json()
 }
 
-export async function createLeader(leader: Omit<Leader, "id" | "created_at" | "updated_at">) {
-  const { data, error } = await supabase.from("leaders").insert([leader]).select().single()
-  if (error) throw error
-  return data as Leader
+export async function createLeader(leader: any) {
+  const response = await fetch(`${API_BASE}/leaders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(leader),
+  })
+  if (!response.ok) throw new Error("Failed to create leader")
+  return response.json()
 }
 
-export async function updateLeader(id: string, updates: Partial<Leader>) {
-  const { data, error } = await supabase.from("leaders").update(updates).eq("id", id).select().single()
-  if (error) throw error
-  return data as Leader
+export async function updateLeader(id: string, updates: any) {
+  const response = await fetch(`${API_BASE}/leaders/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) throw new Error("Failed to update leader")
+  return response.json()
 }
 
-// X-CONs API
+export async function deleteLeader(id: string) {
+  const response = await fetch(`${API_BASE}/leaders/${id}`, { method: "DELETE" })
+  if (!response.ok) throw new Error("Failed to delete leader")
+  return response.json()
+}
+
+// X-CONs
 export async function getXCons() {
-  const { data, error } = await supabase.from("xcons").select("*").order("created_at", { ascending: false })
-  if (error) throw error
-  return data as XCon[]
+  const response = await fetch(`${API_BASE}/xcons`)
+  if (!response.ok) throw new Error("Failed to fetch X-CONs")
+  return response.json()
 }
 
-export async function createXCon(xcon: Omit<XCon, "id" | "created_at" | "updated_at">) {
-  const { data, error } = await supabase.from("xcons").insert([xcon]).select().single()
-  if (error) throw error
-  return data as XCon
+export async function createXCon(xcon: any) {
+  const response = await fetch(`${API_BASE}/xcons`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(xcon),
+  })
+  if (!response.ok) throw new Error("Failed to create X-CON")
+  return response.json()
 }
 
-// Drill Sessions API
+export async function updateXCon(id: string, updates: any) {
+  const response = await fetch(`${API_BASE}/xcons/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) throw new Error("Failed to update X-CON")
+  return response.json()
+}
+
+export async function deleteXCon(id: string) {
+  const response = await fetch(`${API_BASE}/xcons/${id}`, { method: "DELETE" })
+  if (!response.ok) throw new Error("Failed to delete X-CON")
+  return response.json()
+}
+
+// Drill Sessions
 export async function getDrillSessions() {
-  const { data, error } = await supabase.from("drill_sessions").select("*").order("created_at", { ascending: false })
-  if (error) throw error
-  return data as DrillSession[]
+  const response = await fetch(`${API_BASE}/sessions`)
+  if (!response.ok) throw new Error("Failed to fetch sessions")
+  return response.json()
 }
 
-export async function createDrillSession(session: Omit<DrillSession, "id" | "created_at" | "updated_at">) {
-  const { data, error } = await supabase.from("drill_sessions").insert([session]).select().single()
-  if (error) throw error
-  return data as DrillSession
+export async function createDrillSession(session: any) {
+  const response = await fetch(`${API_BASE}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(session),
+  })
+  if (!response.ok) throw new Error("Failed to create session")
+  return response.json()
 }
 
-export async function updateDrillSession(id: string, updates: Partial<DrillSession>) {
-  const { data, error } = await supabase.from("drill_sessions").update(updates).eq("id", id).select().single()
-  if (error) throw error
-  return data as DrillSession
+export async function updateDrillSession(id: string, updates: any) {
+  const response = await fetch(`${API_BASE}/sessions/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) throw new Error("Failed to update session")
+  return response.json()
 }
 
-// Answers API
-export async function submitAnswer(
-  answer: Omit<Answer, "id" | "created_at" | "updated_at" | "reviewed_at" | "reviewed_by" | "feedback">,
-) {
-  const { data, error } = await supabase.from("answers").insert([answer]).select().single()
-  if (error) throw error
-  return data as Answer
+export async function deleteDrillSession(id: string) {
+  const response = await fetch(`${API_BASE}/sessions/${id}`, { method: "DELETE" })
+  if (!response.ok) throw new Error("Failed to delete session")
+  return response.json()
 }
 
-export async function getAnswersByLeader(leaderId: string, sessionId?: string) {
-  let query = supabase.from("answers").select("*").eq("leader_id", leaderId)
+// Answers
+export async function getAnswers() {
+  const response = await fetch(`${API_BASE}/answers`)
+  if (!response.ok) throw new Error("Failed to fetch answers")
+  return response.json()
+}
 
-  if (sessionId) {
-    query = query.eq("session_id", sessionId)
-  }
+export async function submitAnswer(answer: any) {
+  const response = await fetch(`${API_BASE}/answers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(answer),
+  })
+  if (!response.ok) throw new Error("Failed to submit answer")
+  return response.json()
+}
 
-  const { data, error } = await query.order("created_at", { ascending: false })
-  if (error) throw error
-  return data as Answer[]
+export async function updateAnswer(id: string, updates: any) {
+  const response = await fetch(`${API_BASE}/answers/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  })
+  if (!response.ok) throw new Error("Failed to update answer")
+  return response.json()
 }
 
 export async function approveAnswer(id: string, feedback?: string) {
-  const { data, error } = await supabase
-    .from("answers")
-    .update({
-      status: "approved",
-      feedback,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single()
-  if (error) throw error
-  return data as Answer
+  const response = await fetch(`${API_BASE}/answers/${id}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ feedback }),
+  })
+  if (!response.ok) throw new Error("Failed to approve answer")
+  return response.json()
 }
 
 export async function rejectAnswer(id: string, feedback?: string) {
-  const { data, error } = await supabase
-    .from("answers")
-    .update({
-      status: "rejected",
-      feedback,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single()
-  if (error) throw error
-  return data as Answer
+  const response = await fetch(`${API_BASE}/answers/${id}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ feedback }),
+  })
+  if (!response.ok) throw new Error("Failed to reject answer")
+  return response.json()
 }
 
-// Leaderboard API
+export async function deleteAnswer(id: string) {
+  const response = await fetch(`${API_BASE}/answers/${id}`, { method: "DELETE" })
+  if (!response.ok) throw new Error("Failed to delete answer")
+  return response.json()
+}
+
+// Leaderboard
 export async function getLeaderboard(sessionId: string) {
-  const { data, error } = await supabase
-    .from("leaderboard")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("rank", { ascending: true })
-  if (error) throw error
-  return data
+  const response = await fetch(`${API_BASE}/leaderboard?sessionId=${sessionId}`)
+  if (!response.ok) throw new Error("Failed to fetch leaderboard")
+  return response.json()
 }

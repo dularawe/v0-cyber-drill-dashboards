@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 
-const questions: any[] = []
+const xcons: any[] = []
 
 export async function GET() {
   try {
-    return NextResponse.json(questions, { status: 200 })
+    return NextResponse.json(xcons, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })
@@ -14,23 +14,25 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { text, category, difficulty, timeLimit } = body
+    const { email, name, password, team } = body
 
-    if (!text || !category || !difficulty || !timeLimit) {
+    if (!email || !name || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const question = {
-      id: `q_${Date.now()}`,
-      text,
-      category,
-      difficulty,
-      timeLimit,
+    const xcon = {
+      id: `xcon_${Date.now()}`,
+      email,
+      name,
+      password,
+      team: team || "",
+      assignedLeaders: 0,
+      reviewsCompleted: 0,
       created_at: new Date().toISOString(),
     }
 
-    questions.push(question)
-    return NextResponse.json(question, { status: 201 })
+    xcons.push(xcon)
+    return NextResponse.json(xcon, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })

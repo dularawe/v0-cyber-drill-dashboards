@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 
-const questions: any[] = []
+const answers: any[] = []
 
 export async function GET() {
   try {
-    return NextResponse.json(questions, { status: 200 })
+    return NextResponse.json(answers, { status: 200 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })
@@ -14,23 +14,28 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { text, category, difficulty, timeLimit } = body
+    const { leaderId, sessionId, questionId, answer, attempt } = body
 
-    if (!text || !category || !difficulty || !timeLimit) {
+    if (!leaderId || !sessionId || !questionId || !answer) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const question = {
-      id: `q_${Date.now()}`,
-      text,
-      category,
-      difficulty,
-      timeLimit,
-      created_at: new Date().toISOString(),
+    const newAnswer = {
+      id: `answer_${Date.now()}`,
+      leaderId,
+      sessionId,
+      questionId,
+      answer,
+      attempt: attempt || 1,
+      status: "pending",
+      feedback: null,
+      reviewed_by: null,
+      submitted_at: new Date().toISOString(),
+      reviewed_at: null,
     }
 
-    questions.push(question)
-    return NextResponse.json(question, { status: 201 })
+    answers.push(newAnswer)
+    return NextResponse.json(newAnswer, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json({ error: message }, { status: 500 })
