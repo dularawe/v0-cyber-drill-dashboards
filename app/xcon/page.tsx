@@ -45,6 +45,13 @@ export default function XConDashboard() {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    const answersInterval = setInterval(() => {
+      fetchData()
+    }, 2000)
+    return () => clearInterval(answersInterval)
+  }, [])
+
   const fetchData = async () => {
     try {
       setLoading(true)

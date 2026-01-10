@@ -103,6 +103,13 @@ export default function SuperAdminDashboard() {
     return () => clearInterval(timer)
   }, [currentDrill, sessionActive])
 
+  useEffect(() => {
+    const dashboardInterval = setInterval(() => {
+      fetchDashboardData()
+    }, 4000)
+    return () => clearInterval(dashboardInterval)
+  }, [])
+
   const handleStartDrill = async () => {
     if (!currentDrill) return
     try {

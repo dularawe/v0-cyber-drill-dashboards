@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, MessageCircle, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
+import { Send, MessageCircle, AlertCircle, Clock, CheckCircle2, Bell } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { submitAnswer, getDrillSessions } from "@/lib/api-client"
+import { submitAnswer, getDrillSessions, getNotifications } from "@/lib/api-client"
 
 interface Question {
   id: string
@@ -27,6 +27,15 @@ interface Session {
   end_time: string
 }
 
+interface Notification {
+  id: string
+  title: string
+  message: string
+  type: string
+  read: boolean
+  created_at: string
+}
+
 export default function LeaderDashboard() {
   const router = useRouter()
   const [sessionActive, setSessionActive] = useState(false)
@@ -37,6 +46,8 @@ export default function LeaderDashboard() {
   const [questionTimeRemaining, setQuestionTimeRemaining] = useState(300)
   const [isQuestionExpired, setIsQuestionExpired] = useState(false)
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: "q-1",
     number: 1,
@@ -53,6 +64,20 @@ export default function LeaderDashboard() {
     fetchActiveSession()
   }, [router])
 
+  useEffect(() => {
+    const sessionInterval = setInterval(() => {
+      fetchActiveSession()
+    }, 3000)
+    return () => clearInterval(sessionInterval)
+  }, [])
+
+  useEffect(() => {
+    const notificationInterval = setInterval(() => {
+      fetchNotifications()
+    }, 2000)
+    return () => clearInterval(notificationInterval)
+  }, [])
+
   const fetchActiveSession = async () => {
     try {
       const sessions = await getDrillSessions()
@@ -61,9 +86,22 @@ export default function LeaderDashboard() {
         setCurrentSession(active)
         setSessionActive(true)
         calculateTimeRemaining(active.end_time)
+      } else {
+        setSessionActive(false)
       }
     } catch (error) {
       console.error("[v0] Error fetching session:", error)
+    }
+  }
+
+  const fetchNotifications = async () => {
+    try {
+      const notifs = await getNotifications()
+      setNotifications(notifs)
+      const unread = notifs.filter((n: any) => !n.read).length
+      setUnreadCount(unread)
+    } catch (error) {
+      console.error("[v0] Error fetching notifications:", error)
     }
   }
 
@@ -165,6 +203,7 @@ export default function LeaderDashboard() {
       label: "Notifications",
       href: "/leader/notifications",
       icon: <AlertCircle className="h-5 w-5" />,
+      badge: unreadCount > 0 ? unreadCount : undefined,
       active: false,
     },
   ]
@@ -186,6 +225,15 @@ export default function LeaderDashboard() {
           >
             {alert.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
             <span>{alert.message}</span>
+          </div>
+        )}
+
+        {notifications.length > 0 && (
+          <div className="mx-4 mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-blue-600" />
+            <span className="text-sm text-blue-800">
+              {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
+            </span>
           </div>
         )}
 
