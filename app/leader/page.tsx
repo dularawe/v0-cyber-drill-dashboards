@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, MessageCircle, AlertCircle, Clock, CheckCircle2, Bell } from "lucide-react"
+import { Send, AlertCircle, Clock, CheckCircle2, Bell } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
@@ -180,129 +179,98 @@ export default function LeaderDashboard() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const sidebarItems = [
-    {
-      label: "Drill Interface",
-      href: "/leader",
-      icon: <MessageCircle className="h-5 w-5" />,
-      active: true,
-    },
-    {
-      label: "Live Standings",
-      href: "/leader/standings",
-      icon: <CheckCircle2 className="h-5 w-5" />,
-      active: false,
-    },
-    {
-      label: "Answer Review",
-      href: "/leader/answers",
-      icon: <Clock className="h-5 w-5" />,
-      active: false,
-    },
-    {
-      label: "Notifications",
-      href: "/leader/notifications",
-      icon: <Bell className="h-5 w-5" />,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-      active: false,
-    },
-  ]
-
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar items={sidebarItems} />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader
-          title={currentSession?.name || "Cyber Drill Exercise"}
-          status={sessionActive ? "In Progress" : "Waiting"}
-          userRole="Participant"
-        />
-        <CountdownBanner isActive={sessionActive} secondsRemaining={timeRemaining} />
+    <>
+      <DashboardHeader
+        title={currentSession?.name || "Cyber Drill Exercise"}
+        status={sessionActive ? "In Progress" : "Waiting"}
+        userRole="Participant"
+      />
+      <CountdownBanner isActive={sessionActive} secondsRemaining={timeRemaining} />
 
-        {alert && (
-          <div
-            className={`mx-4 mt-4 p-4 rounded-lg flex items-center gap-2 ${alert.type === "success" ? "bg-green-100 border-l-4 border-green-500 text-green-700" : "bg-red-100 border-l-4 border-red-500 text-red-700"}`}
-          >
-            {alert.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-            <span>{alert.message}</span>
+      {alert && (
+        <div
+          className={`mx-4 mt-4 p-4 rounded-lg flex items-center gap-2 ${alert.type === "success" ? "bg-green-100 border-l-4 border-green-500 text-green-700" : "bg-red-100 border-l-4 border-red-500 text-red-700"}`}
+        >
+          {alert.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+          <span>{alert.message}</span>
+        </div>
+      )}
+
+      {notifications.length > 0 && (
+        <div className="mx-4 mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
+          <Bell className="h-4 w-4 text-blue-600" />
+          <span className="text-sm text-blue-800">
+            {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-hidden flex gap-6 p-8">
+        <div className="flex-1 flex flex-col">
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <StatChip label="Session Time" value={formatTime(timeRemaining)} />
+            <StatChip label="Question Time" value={formatTime(questionTimeRemaining)} variant="warning" />
+            <StatChip label="Status" value={currentQuestion.status} variant="default" />
           </div>
-        )}
 
-        {notifications.length > 0 && (
-          <div className="mx-4 mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
-            <Bell className="h-4 w-4 text-blue-600" />
-            <span className="text-sm text-blue-800">
-              {unreadCount} new notification{unreadCount !== 1 ? "s" : ""}
-            </span>
-          </div>
-        )}
+          <Card className="flex-1 border-border bg-card flex flex-col overflow-hidden">
+            <CardHeader className="border-b border-border">
+              <CardTitle>Question {currentQuestion.number}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto p-4">
+              <p className="text-base text-foreground">{currentQuestion.content}</p>
+            </CardContent>
+          </Card>
 
-        <div className="flex-1 overflow-hidden flex gap-6 p-8">
-          <div className="flex-1 flex flex-col">
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <StatChip label="Session Time" value={formatTime(timeRemaining)} />
-              <StatChip label="Question Time" value={formatTime(questionTimeRemaining)} variant="warning" />
-              <StatChip label="Status" value={currentQuestion.status} variant="default" />
-            </div>
-
-            <Card className="flex-1 border-border bg-card flex flex-col overflow-hidden">
-              <CardHeader className="border-b border-border">
-                <CardTitle>Question {currentQuestion.number}</CardTitle>
+          {currentQuestion.status === "pending" && !isQuestionExpired && (
+            <Card className="border-border bg-card mt-6">
+              <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Your Answer</CardTitle>
+                <div
+                  className={`flex items-center gap-2 text-sm font-semibold ${questionTimeRemaining < 60 ? "text-destructive" : "text-foreground"}`}
+                >
+                  <Clock className="h-4 w-4" />
+                  {formatTime(questionTimeRemaining)}
+                </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4">
-                <p className="text-base text-foreground">{currentQuestion.content}</p>
+              <CardContent className="pt-4">
+                <div className="space-y-3">
+                  <textarea
+                    value={currentAnswer}
+                    onChange={(e) => setCurrentAnswer(e.target.value)}
+                    placeholder="Type your answer here..."
+                    disabled={isSubmitting}
+                    className="w-full h-24 p-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  />
+                  <Button
+                    onClick={handleSubmitAnswer}
+                    disabled={!currentAnswer.trim() || isSubmitting}
+                    className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isSubmitting ? "Submitting..." : "Submit Answer"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+          )}
 
-            {currentQuestion.status === "pending" && !isQuestionExpired && (
-              <Card className="border-border bg-card mt-6">
-                <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base">Your Answer</CardTitle>
-                  <div
-                    className={`flex items-center gap-2 text-sm font-semibold ${questionTimeRemaining < 60 ? "text-destructive" : "text-foreground"}`}
-                  >
-                    <Clock className="h-4 w-4" />
-                    {formatTime(questionTimeRemaining)}
+          {isQuestionExpired && (
+            <Card className="border-border bg-destructive/10 mt-6">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertCircle className="h-5 w-5" />
+                  <div>
+                    <p className="font-semibold">Time Limit Exceeded</p>
+                    <p className="text-sm">This question has been marked as unanswered. Loading next question...</p>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-3">
-                    <textarea
-                      value={currentAnswer}
-                      onChange={(e) => setCurrentAnswer(e.target.value)}
-                      placeholder="Type your answer here..."
-                      disabled={isSubmitting}
-                      className="w-full h-24 p-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                    />
-                    <Button
-                      onClick={handleSubmitAnswer}
-                      disabled={!currentAnswer.trim() || isSubmitting}
-                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-                    >
-                      <Send className="h-4 w-4" />
-                      {isSubmitting ? "Submitting..." : "Submit Answer"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {isQuestionExpired && (
-              <Card className="border-border bg-destructive/10 mt-6">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 text-destructive">
-                    <AlertCircle className="h-5 w-5" />
-                    <div>
-                      <p className="font-semibold">Time Limit Exceeded</p>
-                      <p className="text-sm">This question has been marked as unanswered. Loading next question...</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   )
 }
