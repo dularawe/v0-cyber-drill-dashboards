@@ -55,18 +55,37 @@ router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) 
 
 router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { status, start_time, end_time } = req.body
+    const { status } = req.body
+    const { start_time, end_time } = req.body
 
     if (status && !["draft", "scheduled", "live", "completed"].includes(status)) {
       return res.status(400).json({ error: "Invalid status value" })
     }
 
-    await query("UPDATE sessions SET status = ?, start_time = ?, end_time = ? WHERE id = ?", [
-      status,
-      start_time,
-      end_time,
-      req.params.id,
-    ])
+    const updates = []
+    const values = []
+
+    if (status) {
+      updates.push("status = ?")
+      values.push(status)
+    }
+    if (start_time !== undefined) {
+      updates.push("start_time = ?")
+      values.push(start_time)
+    }
+    if (end_time !== undefined) {
+      updates.push("end_time = ?")
+      values.push(end_time)
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No fields to update" })
+    }
+
+    values.push(req.params.id)
+    const query = `UPDATE sessions SET ${updates.join(", ")} WHERE id = ?`
+
+    await query(query, values)
 
     res.json({ id: req.params.id, status, start_time, end_time })
   } catch (error) {

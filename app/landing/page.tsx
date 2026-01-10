@@ -85,7 +85,7 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#db281f] to-[#a01d17]">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Loading drill information...</p>
@@ -97,7 +97,7 @@ export default function LandingPage() {
 
   if (!currentSession) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#db281f] to-[#a01d17]">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">No upcoming drills scheduled.</p>
@@ -111,7 +111,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#db281f] to-[#a01d17] p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center space-y-6">
           <div className="flex justify-center">
@@ -134,20 +134,20 @@ export default function LandingPage() {
             <p className="text-lg font-semibold text-muted-foreground">
               {drillStarted ? "Drill Started - Redirecting..." : "Drill Starts In"}
             </p>
-            <div className="text-7xl font-bold text-blue-600 tracking-tight font-mono">
+            <div className="text-7xl font-bold text-[#db281f] tracking-tight font-mono">
               {formatTime(timeUntilStart)}
             </div>
             <p className="text-sm text-muted-foreground">Prepare your team for the upcoming cyber security exercise</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+            <div className="bg-[#db281f]/10 p-6 rounded-lg border border-[#db281f]/30">
               <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Start Time</p>
               <p className="font-mono text-sm font-semibold mt-2">
                 {new Date(currentSession.start_time).toLocaleString()}
               </p>
             </div>
-            <div className="bg-indigo-50 p-6 rounded-lg border border-indigo-200">
+            <div className="bg-[#a01d17]/10 p-6 rounded-lg border border-[#a01d17]/30">
               <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">End Time</p>
               <p className="font-mono text-sm font-semibold mt-2">
                 {new Date(currentSession.end_time).toLocaleString()}
@@ -155,9 +155,9 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-l-4 border-blue-500">
+          <div className="bg-gradient-to-r from-[#db281f]/10 to-[#a01d17]/10 p-6 rounded-lg border-l-4 border-[#db281f]">
             <p className="text-sm font-medium text-foreground mb-2">
-              Status: <span className="text-blue-600 font-bold">{currentSession.status.toUpperCase()}</span>
+              Status: <span className="text-[#db281f] font-bold">{currentSession.status.toUpperCase()}</span>
             </p>
             <p className="text-xs text-muted-foreground">
               ✓ This page will automatically redirect when the drill starts.
@@ -170,7 +170,7 @@ export default function LandingPage() {
           {timeUntilStart === 0 && !drillStarted && (
             <Button
               onClick={() => router.push("/leader")}
-              className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700"
+              className="w-full py-6 text-lg bg-[#db281f] hover:bg-[#a01d17]"
               size="lg"
             >
               Enter Drill Now
