@@ -5,10 +5,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Plus, Edit2, Trash2, X, Eye, EyeOff } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Users, Clock, FileText } from "lucide-react"
 import { getXCons, createXCon, deleteXCon } from "@/lib/api-client"
 
 interface XCon {
@@ -96,97 +94,86 @@ export default function XConsPage() {
     }
   }
 
-  const sidebarItems = [
-    { label: "Overview", href: "/super-admin", icon: <FileText className="h-5 w-5" />, active: false },
-    { label: "Questions", href: "/super-admin/questions", icon: <CheckCircle2 className="h-5 w-5" />, active: false },
-    { label: "X-CONs", href: "/super-admin/xcons", icon: <Users className="h-5 w-5" />, active: true },
-    { label: "Participants", href: "/super-admin/participants", icon: <Users className="h-5 w-5" />, active: false },
-    { label: "Reports", href: "/super-admin/reports", icon: <Clock className="h-5 w-5" />, active: false },
-  ]
-
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar items={sidebarItems} />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader title="X-CON Management" status="Configure" userRole="Super Admin" />
+    <>
+      <DashboardHeader title="X-CON Management" status="Configure" userRole="Super Admin" />
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-8 space-y-8">
-            {/* Header with Add Button */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">X-CON Coordinators</h2>
-              <Button
-                onClick={() => setShowAddModal(true)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Plus className="h-4 w-4" />
-                Add X-CON
-              </Button>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <Card className="border-destructive bg-destructive/10">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-destructive">{error}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* X-CONs Table */}
-            <Card className="border-border bg-card overflow-hidden">
-              <div className="overflow-x-auto">
-                {loading ? (
-                  <div className="p-8 text-center text-muted-foreground">Loading X-CONs...</div>
-                ) : xcons.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">No X-CONs found. Add one to get started.</div>
-                ) : (
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border bg-secondary/50">
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Email</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Leaders Assigned</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {xcons.map((xcon) => (
-                        <tr key={xcon.id} className="border-b border-border hover:bg-secondary/50 transition">
-                          <td className="px-6 py-4 text-sm font-medium text-foreground">{xcon.name}</td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{xcon.email}</td>
-                          <td className="px-6 py-4 text-sm text-foreground">{xcon.assignedLeaders}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
-                              {xcon.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 text-destructive hover:text-destructive bg-transparent"
-                                onClick={() => handleDeleteXCon(xcon.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </Card>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8 space-y-8">
+          {/* Header with Add Button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">X-CON Coordinators</h2>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <Plus className="h-4 w-4" />
+              Add X-CON
+            </Button>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <Card className="border-destructive bg-destructive/10">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* X-CONs Table */}
+          <Card className="border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              {loading ? (
+                <div className="p-8 text-center text-muted-foreground">Loading X-CONs...</div>
+              ) : xcons.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No X-CONs found. Add one to get started.</div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-secondary/50">
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Email</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Leaders Assigned</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {xcons.map((xcon) => (
+                      <tr key={xcon.id} className="border-b border-border hover:bg-secondary/50 transition">
+                        <td className="px-6 py-4 text-sm font-medium text-foreground">{xcon.name}</td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">{xcon.email}</td>
+                        <td className="px-6 py-4 text-sm text-foreground">{xcon.assignedLeaders}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
+                            {xcon.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-destructive hover:text-destructive bg-transparent"
+                              onClick={() => handleDeleteXCon(xcon.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </Card>
         </div>
-      </main>
+      </div>
 
       {/* Add X-CON Modal */}
       {showAddModal && (
@@ -263,6 +250,6 @@ export default function XConsPage() {
           </Card>
         </div>
       )}
-    </div>
+    </>
   )
 }

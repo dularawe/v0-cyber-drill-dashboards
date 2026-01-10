@@ -24,26 +24,28 @@ export default function LandingPage() {
 
   useEffect(() => {
     fetchUpcomingDrill()
-    const pollInterval = setInterval(fetchUpcomingDrill, 5000)
+    const pollInterval = setInterval(fetchUpcomingDrill, 2000)
     return () => clearInterval(pollInterval)
   }, [])
 
   const fetchUpcomingDrill = async () => {
     try {
       const sessions = await getDrillSessions()
-      const upcoming = sessions.find(
-        (s: any) => s.status === "scheduled" || s.status === "live" || s.status === "draft",
-      )
+
+      const liveDrill = sessions.find((s: any) => s.status === "live")
+      if (liveDrill) {
+        setCurrentSession(liveDrill)
+        setDrillStarted(true)
+        const userRole = sessionStorage.getItem("userRole") || "leader"
+        const dashboardRoute = userRole === "xcon" ? "/xcon" : userRole === "super-admin" ? "/super-admin" : "/leader"
+        setTimeout(() => router.push(dashboardRoute), 500)
+        return
+      }
+
+      const upcoming = sessions.find((s: any) => s.status === "scheduled" || s.status === "draft")
       if (upcoming) {
         setCurrentSession(upcoming)
-        if (upcoming.status === "live") {
-          setDrillStarted(true)
-          const userRole = sessionStorage.getItem("userRole") || "leader"
-          const dashboardRoute = userRole === "xcon" ? "/xcon" : userRole === "super-admin" ? "/super-admin" : "/leader"
-          router.push(dashboardRoute)
-        } else {
-          calculateCountdown(upcoming.start_time)
-        }
+        calculateCountdown(upcoming.start_time)
       }
     } catch (error) {
       console.error("[v0] Error fetching drill:", error)
@@ -129,7 +131,9 @@ export default function LandingPage() {
 
         <CardContent className="text-center space-y-8">
           <div className="space-y-4">
-            <p className="text-lg font-semibold text-muted-foreground">Drill Starts In</p>
+            <p className="text-lg font-semibold text-muted-foreground">
+              {drillStarted ? "Drill Started - Redirecting..." : "Drill Starts In"}
+            </p>
             <div className="text-7xl font-bold text-blue-600 tracking-tight font-mono">
               {formatTime(timeUntilStart)}
             </div>

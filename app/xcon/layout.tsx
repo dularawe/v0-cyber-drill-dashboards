@@ -1,11 +1,41 @@
 "use client"
 
 import type React from "react"
-
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { CheckCircle, User, Clock, Bell } from "lucide-react"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { getDrillSessions } from "@/lib/api-client"
 
 export default function XConLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const [isAllowed, setIsAllowed] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    checkDrillStatus()
+    const interval = setInterval(checkDrillStatus, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const checkDrillStatus = async () => {
+    try {
+      const sessions = await getDrillSessions()
+      const activeDrill = sessions.find((s: any) => s.status === "live")
+
+      if (activeDrill) {
+        setIsAllowed(true)
+      } else {
+        setIsAllowed(false)
+        router.push("/landing")
+      }
+    } catch (error) {
+      console.error("[v0] Error checking drill status:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const sidebarItems = [
     {
       label: "Review Queue",
@@ -32,6 +62,18 @@ export default function XConLayout({ children }: { children: React.ReactNode }) 
       active: false,
     },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <p className="text-muted-foreground">Checking drill status...</p>
+      </div>
+    )
+  }
+
+  if (!isAllowed) {
+    return null
+  }
 
   return (
     <div className="flex h-screen bg-background">

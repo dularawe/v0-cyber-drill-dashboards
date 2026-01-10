@@ -13,8 +13,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       active: true,
     },
     {
-      label: "Create Drill",
-      href: "/super-admin/create-drill",
+      label: "Drill Management",
+      href: "/super-admin/drills",
       icon: <Plus className="h-5 w-5" />,
       active: false,
     },

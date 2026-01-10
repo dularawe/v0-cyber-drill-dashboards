@@ -4,11 +4,9 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Plus, Edit2, Trash2, X } from "lucide-react"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Users, Clock, FileText } from "lucide-react"
+import { DashboardHeader } from "@/components/dashboard-header"
 import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from "@/lib/api-client"
 
 interface Question {
@@ -97,135 +95,123 @@ export default function QuestionsPage() {
     setShowEditModal(true)
   }
 
-  const sidebarItems = [
-    { label: "Overview", href: "/super-admin", icon: <FileText className="h-5 w-5" />, active: false },
-    { label: "Questions", href: "/super-admin/questions", icon: <CheckCircle2 className="h-5 w-5" />, active: true },
-    { label: "X-CONs", href: "/super-admin/xcons", icon: <Users className="h-5 w-5" />, active: false },
-    { label: "Participants", href: "/super-admin/participants", icon: <Users className="h-5 w-5" />, active: false },
-    { label: "Reports", href: "/super-admin/reports", icon: <Clock className="h-5 w-5" />, active: false },
-  ]
-
   if (loading) {
     return (
       <div className="flex h-screen bg-background">
-        <DashboardSidebar items={sidebarItems} />
-        <main className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Loading questions...</p>
-        </main>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar items={sidebarItems} />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader title="Questions Management" status="Configure" userRole="Super Admin" />
+    <>
+      <DashboardHeader title="Questions Management" status="Configure" userRole="Super Admin" />
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-8 space-y-8">
-            {/* Header with Add Button */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Questions Bank</h2>
-              <Button
-                onClick={() => setShowAddModal(true)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Plus className="h-4 w-4" />
-                Add Question
-              </Button>
-            </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8 space-y-8">
+          {/* Header with Add Button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Questions Bank</h2>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <Plus className="h-4 w-4" />
+              Add Question
+            </Button>
+          </div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-4">
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Total Questions</div>
-                  <div className="text-2xl font-bold text-foreground mt-1">{questions.length}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Easy</div>
-                  <div className="text-2xl font-bold text-green-500 mt-1">
-                    {questions.filter((q) => q.difficulty === "easy").length}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Medium</div>
-                  <div className="text-2xl font-bold text-yellow-500 mt-1">
-                    {questions.filter((q) => q.difficulty === "medium").length}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Hard</div>
-                  <div className="text-2xl font-bold text-red-500 mt-1">
-                    {questions.filter((q) => q.difficulty === "hard").length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-4">
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="text-sm text-muted-foreground">Total Questions</div>
+                <div className="text-2xl font-bold text-foreground mt-1">{questions.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="text-sm text-muted-foreground">Easy</div>
+                <div className="text-2xl font-bold text-green-500 mt-1">
+                  {questions.filter((q) => q.difficulty === "easy").length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="text-sm text-muted-foreground">Medium</div>
+                <div className="text-2xl font-bold text-yellow-500 mt-1">
+                  {questions.filter((q) => q.difficulty === "medium").length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="text-sm text-muted-foreground">Hard</div>
+                <div className="text-2xl font-bold text-red-500 mt-1">
+                  {questions.filter((q) => q.difficulty === "hard").length}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Questions List */}
-            <div className="space-y-4">
-              {questions.map((question) => (
-                <Card key={question.id} className="border-border bg-card hover:bg-secondary/50 transition">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-base font-semibold text-foreground">{question.text}</h3>
-                          <span
-                            className={`text-xs font-medium px-2 py-1 rounded-full ${
-                              question.difficulty === "easy"
-                                ? "bg-green-500/20 text-green-500"
-                                : question.difficulty === "medium"
-                                  ? "bg-yellow-500/20 text-yellow-500"
-                                  : "bg-red-500/20 text-red-500"
-                            }`}
-                          >
-                            {question.difficulty}
-                          </span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <p className="text-muted-foreground">
-                            <strong>Category:</strong> {question.category}
-                          </p>
-                          <p className="text-muted-foreground">
-                            <strong>Time Limit:</strong> {question.timeLimit} seconds
-                          </p>
-                        </div>
+          {/* Questions List */}
+          <div className="space-y-4">
+            {questions.map((question) => (
+              <Card key={question.id} className="border-border bg-card hover:bg-secondary/50 transition">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="text-base font-semibold text-foreground">{question.text}</h3>
+                        <span
+                          className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            question.difficulty === "easy"
+                              ? "bg-green-500/20 text-green-500"
+                              : question.difficulty === "medium"
+                                ? "bg-yellow-500/20 text-yellow-500"
+                                : "bg-red-500/20 text-red-500"
+                          }`}
+                        >
+                          {question.difficulty}
+                        </span>
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 bg-transparent"
-                          onClick={() => openEditModal(question)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 text-destructive hover:text-destructive bg-transparent"
-                          onClick={() => handleDeleteQuestion(question.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="space-y-2 text-sm">
+                        <p className="text-muted-foreground">
+                          <strong>Category:</strong> {question.category}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <strong>Time Limit:</strong> {question.timeLimit} seconds
+                        </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-transparent"
+                        onClick={() => openEditModal(question)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive bg-transparent"
+                        onClick={() => handleDeleteQuestion(question.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Add Question Modal */}
       {showAddModal && (
@@ -404,6 +390,6 @@ export default function QuestionsPage() {
           </Card>
         </div>
       )}
-    </div>
+    </>
   )
 }
