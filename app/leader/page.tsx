@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, MessageCircle, AlertCircle, RotateCcw } from "lucide-react"
+import { Send, MessageCircle, AlertCircle } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
@@ -17,20 +17,10 @@ interface Message {
   timestamp: string
 }
 
-interface QuestionAttempt {
-  attemptNumber: number
-  answer: string
-  status: "submitted" | "approved" | "rejected"
-  feedback?: string
-  timestamp: string
-}
-
 interface Question {
   id: string
   number: number
   content: string
-  attempts: QuestionAttempt[]
-  maxAttempts: number
   status: "pending" | "submitted" | "approved" | "rejected"
 }
 
@@ -78,17 +68,7 @@ export default function LeaderDashboard() {
     id: "q-2",
     number: 2,
     content: "What are the main components of a security incident response plan?",
-    attempts: [
-      {
-        attemptNumber: 1,
-        answer: "Preparation, detection, analysis, containment, eradication, recovery.",
-        status: "rejected",
-        feedback: "Missing post-incident activity phase",
-        timestamp: "2:07 PM",
-      },
-    ],
-    maxAttempts: 3,
-    status: "rejected",
+    status: "pending",
   })
 
   const [stats] = useState({
@@ -118,10 +98,6 @@ export default function LeaderDashboard() {
       setCurrentAnswer("")
     }
   }
-
-  const canRetry =
-    currentQuestion.attempts.length < currentQuestion.maxAttempts && currentQuestion.status !== "approved"
-  const remainingAttempts = currentQuestion.maxAttempts - currentQuestion.attempts.length
 
   return (
     <div className="flex h-screen bg-background">
@@ -175,51 +151,15 @@ export default function LeaderDashboard() {
             </Card>
 
             {/* Answer Input */}
-            {(currentQuestion.status === "pending" || canRetry) && (
+            {currentQuestion.status === "pending" && (
               <Card className="border-border bg-card mt-6">
                 <CardHeader className="border-b border-border pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Question {currentQuestion.number}</CardTitle>
-                    {currentQuestion.attempts.length > 0 && (
-                      <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                        Attempt {currentQuestion.attempts.length + 1} of {currentQuestion.maxAttempts}
-                      </span>
-                    )}
-                  </div>
+                  <CardTitle className="text-base">Question {currentQuestion.number}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <div className="flex items-start gap-3 mb-4">
-                    <p className="text-sm text-foreground flex-1">{currentQuestion.content}</p>
-                    <RotateCcw className="h-4 w-4 text-primary flex-shrink-0 mt-1" title="Reattempt available" />
+                  <div className="mb-4">
+                    <p className="text-sm text-foreground">{currentQuestion.content}</p>
                   </div>
-
-                  {currentQuestion.attempts.length > 0 && (
-                    <div className="mb-4 p-3 rounded-lg bg-secondary border border-border space-y-2">
-                      <p className="text-xs font-semibold text-foreground">
-                        Previous Attempt{currentQuestion.attempts.length > 1 ? "s" : ""}:
-                      </p>
-                      {currentQuestion.attempts.map((attempt) => (
-                        <div key={attempt.attemptNumber} className="text-xs space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-foreground">Attempt {attempt.attemptNumber}</span>
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                attempt.status === "approved"
-                                  ? "bg-green-100 text-green-700"
-                                  : attempt.status === "rejected"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                              }`}
-                            >
-                              {attempt.status.charAt(0).toUpperCase() + attempt.status.slice(1)}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground italic">{attempt.answer}</p>
-                          {attempt.feedback && <p className="text-red-600 font-medium">Feedback: {attempt.feedback}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   <div className="space-y-3">
                     <textarea
@@ -228,30 +168,14 @@ export default function LeaderDashboard() {
                       placeholder="Type your answer here..."
                       className="w-full h-24 p-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {remainingAttempts} attempt{remainingAttempts !== 1 ? "s" : ""} remaining
-                      </span>
-                      {canRetry ? (
-                        <Button
-                          onClick={handleSubmitAnswer}
-                          disabled={!currentAnswer.trim()}
-                          className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          Retry Answer
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={handleSubmitAnswer}
-                          disabled={!currentAnswer.trim()}
-                          className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                          <Send className="h-4 w-4" />
-                          Submit Answer
-                        </Button>
-                      )}
-                    </div>
+                    <Button
+                      onClick={handleSubmitAnswer}
+                      disabled={!currentAnswer.trim()}
+                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      <Send className="h-4 w-4" />
+                      Submit Answer
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

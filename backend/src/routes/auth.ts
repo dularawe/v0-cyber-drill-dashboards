@@ -9,15 +9,24 @@ router.post("/signin", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
 
+    console.log("[v0] Sign in attempt for email:", email)
+
     const results: any = await query("SELECT * FROM users WHERE email = ?", [email])
     const user = results[0]
 
+    console.log("[v0] User found:", user ? "yes" : "no")
+
     if (!user) {
+      console.log("[v0] No user found with email:", email)
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
+    console.log("[v0] Comparing passwords - Input: [hidden], Hash exists: yes")
     const passwordMatch = await bcrypt.compare(password, user.password)
+    console.log("[v0] Password match result:", passwordMatch)
+
     if (!passwordMatch) {
+      console.log("[v0] Password mismatch for user:", email)
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
@@ -33,6 +42,7 @@ router.post("/signin", async (req: Request, res: Response) => {
       },
     })
   } catch (error) {
+    console.error("[v0] Sign in error:", error)
     res.status(500).json({ error: "Sign in failed" })
   }
 })

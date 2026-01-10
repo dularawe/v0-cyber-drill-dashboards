@@ -18,6 +18,23 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json())
 
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString()
+  console.log(`[${timestamp}] ${req.method} ${req.path}`)
+
+  // Log request body for POST/PATCH requests
+  if (req.method === "POST" || req.method === "PATCH") {
+    console.log(`  Body:`, JSON.stringify(req.body, null, 2))
+  }
+
+  // Log response status when response finishes
+  res.on("finish", () => {
+    console.log(`  Status: ${res.statusCode}`)
+  })
+
+  next()
+})
+
 // Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/questions", questionRoutes)

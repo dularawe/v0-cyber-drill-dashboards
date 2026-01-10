@@ -98,7 +98,7 @@ CREATE INDEX idx_leaderboard_session ON leaderboard(session_id);
 -- Insert admin user
 INSERT INTO users (email, password, name, role) VALUES (
   'admin@cyberdrill.com',
-  '$2b$10$YourHashedPasswordHere',
+  '$2b$10$HKFh2C2e0Sx7jzJ/hKvS9e7kL5rM8nP0qR1sT2uV3wX4yZ5aB6cDi',
   'System Admin',
   'super_admin'
 );
