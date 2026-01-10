@@ -34,7 +34,6 @@ export default function LandingPage() {
 
       const liveDrill = sessions.find((s: any) => s.status === "live")
       if (liveDrill) {
-        setCurrentSession(liveDrill)
         setDrillStarted(true)
         const userRole = sessionStorage.getItem("userRole") || "leader"
         const dashboardRoute = userRole === "xcon" ? "/xcon" : userRole === "super-admin" ? "/super-admin" : "/leader"
@@ -46,6 +45,8 @@ export default function LandingPage() {
       if (upcoming) {
         setCurrentSession(upcoming)
         calculateCountdown(upcoming.start_time)
+      } else {
+        setCurrentSession(null)
       }
     } catch (error) {
       console.error("[v0] Error fetching drill:", error)

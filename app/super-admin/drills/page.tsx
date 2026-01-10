@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Play, Pause, StopCircle, Trash2, Plus, X, AlertCircle, CheckCircle2 } from "lucide-react"
+import { Play, StopCircle, Trash2, Plus, X, AlertCircle, CheckCircle2, Edit2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,6 +38,7 @@ export default function DrillManagementPage() {
   const [loading, setLoading] = useState(false)
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingDrillId, setEditingDrillId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     startTime: "",
@@ -63,6 +64,17 @@ export default function DrillManagementPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleEditDrill = (drill: Drill) => {
+    setEditingDrillId(drill.id)
+    setFormData({
+      name: drill.name,
+      startTime: drill.start_time.slice(0, 16),
+      endTime: drill.end_time.slice(0, 16),
+      selectedQuestions: [],
+    })
+    setShowCreateForm(true)
+  }
+
   const handleCreateDrill = async () => {
     if (!formData.name.trim()) {
       setAlert({ type: "error", message: "Please enter a drill name" })
@@ -76,30 +88,42 @@ export default function DrillManagementPage() {
       setAlert({ type: "error", message: "Please select an end time" })
       return
     }
-    if (formData.selectedQuestions.length === 0) {
-      setAlert({ type: "error", message: "Please select at least one question" })
-      return
-    }
 
     setLoading(true)
     try {
-      const drillData = {
-        name: formData.name,
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        questions: formData.selectedQuestions,
+      if (editingDrillId) {
+        const drillData = {
+          name: formData.name,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+        }
+        await updateDrillSession(String(editingDrillId), drillData)
+        setAlert({ type: "success", message: "Drill updated successfully!" })
+      } else {
+        if (formData.selectedQuestions.length === 0) {
+          setAlert({ type: "error", message: "Please select at least one question" })
+          return
+        }
+        const drillData = {
+          name: formData.name,
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+          questions: formData.selectedQuestions,
+        }
+        await createDrillSession(drillData)
+        setAlert({ type: "success", message: "Drill created successfully!" })
       }
-      await createDrillSession(drillData)
-      setAlert({ type: "success", message: "Drill created successfully!" })
+
       setFormData({ name: "", startTime: "", endTime: "", selectedQuestions: [] })
+      setEditingDrillId(null)
       setShowCreateForm(false)
 
       // Refresh drills list
       const updatedDrills = await getDrillSessions()
       setDrills(updatedDrills)
     } catch (error) {
-      console.error("[v0] Error creating drill:", error)
-      setAlert({ type: "error", message: "Failed to create drill" })
+      console.error("[v0] Error saving drill:", error)
+      setAlert({ type: "error", message: "Failed to save drill" })
     } finally {
       setLoading(false)
     }
@@ -124,6 +148,17 @@ export default function DrillManagementPage() {
     } catch (error) {
       console.error("[v0] Error pausing drill:", error)
       setAlert({ type: "error", message: "Failed to pause drill" })
+    }
+  }
+
+  const handleStopDrill = async (drillId: number) => {
+    try {
+      await updateDrillSession(String(drillId), { status: "scheduled" })
+      setAlert({ type: "success", message: "Drill stopped successfully!" })
+      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "scheduled" } : d)))
+    } catch (error) {
+      console.error("[v0] Error stopping drill:", error)
+      setAlert({ type: "error", message: "Failed to stop drill" })
     }
   }
 
@@ -188,7 +223,11 @@ export default function DrillManagementPage() {
               <p className="text-muted-foreground mt-1">Manage and control cyber drill sessions</p>
             </div>
             <Button
-              onClick={() => setShowCreateForm(!showCreateForm)}
+              onClick={() => {
+                setEditingDrillId(null)
+                setFormData({ name: "", startTime: "", endTime: "", selectedQuestions: [] })
+                setShowCreateForm(!showCreateForm)
+              }}
               className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus className="h-4 w-4" />
@@ -196,11 +235,11 @@ export default function DrillManagementPage() {
             </Button>
           </div>
 
-          {/* Create Drill Form */}
+          {/* Create/Edit Drill Form */}
           {showCreateForm && (
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle>Create New Drill</CardTitle>
+                <CardTitle>{editingDrillId ? "Edit Drill" : "Create New Drill"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -235,48 +274,54 @@ export default function DrillManagementPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground">
-                    Select Questions ({formData.selectedQuestions.length} selected)
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {allQuestions.map((question) => (
-                      <label
-                        key={question.id}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedQuestions.includes(question.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({
-                                ...formData,
-                                selectedQuestions: [...formData.selectedQuestions, question.id],
-                              })
-                            } else {
-                              setFormData({
-                                ...formData,
-                                selectedQuestions: formData.selectedQuestions.filter((id) => id !== question.id),
-                              })
-                            }
-                          }}
-                          className="w-4 h-4"
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{question.text}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {question.category} • {question.difficulty}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
+                {!editingDrillId && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-foreground">
+                      Select Questions ({formData.selectedQuestions.length} selected)
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {allQuestions.map((question) => (
+                        <label
+                          key={question.id}
+                          className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedQuestions.includes(question.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  selectedQuestions: [...formData.selectedQuestions, question.id],
+                                })
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  selectedQuestions: formData.selectedQuestions.filter((id) => id !== question.id),
+                                })
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{question.text}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {question.category} • {question.difficulty}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex gap-3 justify-end">
                   <Button
-                    onClick={() => setShowCreateForm(false)}
+                    onClick={() => {
+                      setShowCreateForm(false)
+                      setEditingDrillId(null)
+                      setFormData({ name: "", startTime: "", endTime: "", selectedQuestions: [] })
+                    }}
                     className="gap-2 bg-secondary hover:bg-secondary/80 text-foreground"
                   >
                     <X className="h-4 w-4" />
@@ -288,7 +333,7 @@ export default function DrillManagementPage() {
                     className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Plus className="h-4 w-4" />
-                    {loading ? "Creating..." : "Create Drill"}
+                    {loading ? "Saving..." : editingDrillId ? "Update Drill" : "Create Drill"}
                   </Button>
                 </div>
               </CardContent>
@@ -339,25 +384,35 @@ export default function DrillManagementPage() {
                             {new Date(drill.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex gap-2 justify-end">
+                            <div className="flex gap-2 justify-end flex-wrap">
                               {drill.status === "draft" || drill.status === "scheduled" ? (
-                                <Button
-                                  onClick={() => handleStartDrill(drill.id)}
-                                  size="sm"
-                                  className="gap-1 bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                  <Play className="h-4 w-4" />
-                                  Start
-                                </Button>
+                                <>
+                                  <Button
+                                    onClick={() => handleEditDrill(drill)}
+                                    size="sm"
+                                    className="gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleStartDrill(drill.id)}
+                                    size="sm"
+                                    className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    <Play className="h-4 w-4" />
+                                    Start
+                                  </Button>
+                                </>
                               ) : drill.status === "live" ? (
                                 <>
                                   <Button
-                                    onClick={() => handlePauseDrill(drill.id)}
+                                    onClick={() => handleStopDrill(drill.id)}
                                     size="sm"
-                                    className="gap-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    className="gap-1 bg-orange-600 hover:bg-orange-700 text-white"
                                   >
-                                    <Pause className="h-4 w-4" />
-                                    Pause
+                                    <StopCircle className="h-4 w-4" />
+                                    Stop
                                   </Button>
                                   <Button
                                     onClick={() => handleEndDrill(drill.id)}

@@ -83,9 +83,9 @@ router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Respon
     }
 
     values.push(req.params.id)
-    const query = `UPDATE sessions SET ${updates.join(", ")} WHERE id = ?`
+    const sqlQuery = `UPDATE sessions SET ${updates.join(", ")} WHERE id = ?`
 
-    await query(query, values)
+    await query(sqlQuery, values)
 
     res.json({ id: req.params.id, status, start_time, end_time })
   } catch (error) {
