@@ -3,12 +3,12 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit2, Trash2, X, Eye, EyeOff } from "lucide-react"
+import { Plus, Edit2, Trash2, X, Eye, EyeOff, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Users, Clock, FileText } from "lucide-react"
+import { Users, Clock, FileText } from "lucide-react"
 import { getLeaders, createLeader, deleteLeader, getXCons } from "@/lib/api-client"
 
 interface Participant {
@@ -18,6 +18,7 @@ interface Participant {
   password: string
   team: string
   xconAssigned: string
+  xconName?: string
   status: "active" | "inactive"
 }
 
@@ -27,11 +28,17 @@ interface XConOption {
   email: string
 }
 
+interface Alert {
+  type: "success" | "error" | "warning"
+  message: string
+  id: string
+}
+
 export default function ParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [xconOptions, setXconOptions] = useState<XConOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [alerts, setAlerts] = useState<Alert[]>([])
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -43,6 +50,19 @@ export default function ParticipantsPage() {
     xconAssigned: "",
   })
 
+  const addAlert = (type: "success" | "error" | "warning", message: string) => {
+    const alertId = Date.now().toString()
+    setAlerts((prev) => [...prev, { type, message, id: alertId }])
+    setTimeout(() => {
+      setAlerts((prev) => prev.filter((a) => a.id !== alertId))
+    }, 5000)
+  }
+
+  const getXConName = (xconId: string): string => {
+    const xcon = xconOptions.find((x) => x.id === xconId)
+    return xcon?.name || "Unassigned"
+  }
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -50,7 +70,10 @@ export default function ParticipantsPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      setError(null)
+
+      // Fetch X-CONs first
+      const xconsData = await getXCons()
+      setXconOptions(xconsData)
 
       // Fetch leaders/participants
       const leadersData = await getLeaders()
@@ -60,15 +83,15 @@ export default function ParticipantsPage() {
         email: leader.email,
         password: "",
         team: "Team Default",
-        xconAssigned: leader.xcon_id || "Unassigned",
+        xconAssigned: leader.xcon_id || "",
+        xconName: xconsData.find((x: any) => x.id === leader.xcon_id)?.name || "Unassigned",
         status: "active",
       }))
       setParticipants(formattedLeaders)
-
-      const xconsData = await getXCons()
-      setXconOptions(xconsData)
+      addAlert("success", "Participants loaded successfully")
     } catch (err) {
-      setError("Failed to fetch data")
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch participants"
+      addAlert("error", errorMessage)
       console.error("[v0] Fetch data error:", err)
     } finally {
       setLoading(false)
@@ -77,6 +100,17 @@ export default function ParticipantsPage() {
 
   const handleAddParticipant = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!formData.name || !formData.email || !formData.password) {
+      addAlert("warning", "Please fill in all required fields")
+      return
+    }
+
+    if (!formData.xconAssigned) {
+      addAlert("warning", "Please assign an X-CON coordinator")
+      return
+    }
+
     try {
       const newLeader = await createLeader({
         name: formData.name,
@@ -91,25 +125,34 @@ export default function ParticipantsPage() {
         email: newLeader.email,
         password: "",
         team: formData.team,
-        xconAssigned: formData.xconAssigned || "Unassigned",
+        xconAssigned: formData.xconAssigned,
+        xconName: getXConName(formData.xconAssigned),
         status: "active",
       }
 
       setParticipants([...participants, formattedParticipant])
       setFormData({ name: "", email: "", password: "", team: "", xconAssigned: "" })
       setShowAddModal(false)
+      addAlert("success", `Participant "${formData.name}" created successfully`)
     } catch (err) {
-      setError("Failed to create participant")
+      const errorMessage = err instanceof Error ? err.message : "Failed to create participant"
+      addAlert("error", errorMessage)
       console.error("[v0] Create participant error:", err)
     }
   }
 
-  const handleDeleteParticipant = async (id: string) => {
+  const handleDeleteParticipant = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+      return
+    }
+
     try {
       await deleteLeader(id)
       setParticipants(participants.filter((p) => p.id !== id))
+      addAlert("success", `Participant "${name}" deleted successfully`)
     } catch (err) {
-      setError("Failed to delete participant")
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete participant"
+      addAlert("error", errorMessage)
       console.error("[v0] Delete participant error:", err)
     }
   }
@@ -130,6 +173,32 @@ export default function ParticipantsPage() {
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-8 space-y-8">
+            {alerts.length > 0 && (
+              <div className="space-y-3 fixed top-4 right-4 z-50 max-w-md">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm transition-all ${
+                      alert.type === "success"
+                        ? "bg-green-50 border-green-200 text-green-800"
+                        : alert.type === "error"
+                          ? "bg-red-50 border-red-200 text-red-800"
+                          : "bg-yellow-50 border-yellow-200 text-yellow-800"
+                    }`}
+                  >
+                    {alert.type === "success" ? (
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600" />
+                    ) : alert.type === "error" ? (
+                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
+                    )}
+                    <p className="text-sm font-medium">{alert.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Header with Add Button */}
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-foreground">Participants (Leaders)</h2>
@@ -141,15 +210,6 @@ export default function ParticipantsPage() {
                 Add Participant
               </Button>
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <Card className="border-destructive bg-destructive/10">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-destructive">{error}</p>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Participants Table */}
             <Card className="border-border bg-card overflow-hidden">
@@ -167,7 +227,7 @@ export default function ParticipantsPage() {
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Email</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">X-CON</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">X-CON Coordinator</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
                         <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                       </tr>
@@ -178,9 +238,9 @@ export default function ParticipantsPage() {
                           <td className="px-6 py-4 text-sm font-medium text-foreground">{participant.name}</td>
                           <td className="px-6 py-4 text-sm text-muted-foreground">{participant.email}</td>
                           <td className="px-6 py-4 text-sm text-foreground">{participant.team}</td>
-                          <td className="px-6 py-4 text-sm text-foreground">{participant.xconAssigned}</td>
+                          <td className="px-6 py-4 text-sm text-foreground font-medium">{participant.xconName}</td>
                           <td className="px-6 py-4 text-sm">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
+                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                               {participant.status}
                             </span>
                           </td>
@@ -192,8 +252,8 @@ export default function ParticipantsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-2 text-destructive hover:text-destructive bg-transparent"
-                                onClick={() => handleDeleteParticipant(participant.id)}
+                                className="gap-2 text-destructive hover:text-destructive bg-transparent hover:bg-red-50"
+                                onClick={() => handleDeleteParticipant(participant.id, participant.name)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -223,7 +283,7 @@ export default function ParticipantsPage() {
             <CardContent>
               <form onSubmit={handleAddParticipant} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Full Name</label>
+                  <label className="text-sm font-medium text-foreground">Full Name *</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -235,7 +295,7 @@ export default function ParticipantsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Email</label>
+                  <label className="text-sm font-medium text-foreground">Email *</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -247,7 +307,7 @@ export default function ParticipantsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Password</label>
+                  <label className="text-sm font-medium text-foreground">Password *</label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
@@ -274,19 +334,19 @@ export default function ParticipantsPage() {
                     value={formData.team}
                     onChange={(e) => setFormData({ ...formData, team: e.target.value })}
                     placeholder="e.g. Team Alpha"
-                    required
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Assign X-CON</label>
+                  <label className="text-sm font-medium text-foreground">Assign X-CON Coordinator *</label>
                   <select
                     value={formData.xconAssigned}
                     onChange={(e) => setFormData({ ...formData, xconAssigned: e.target.value })}
+                    required
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Select X-CON Coordinator</option>
+                    <option value="">-- Select X-CON --</option>
                     {xconOptions.map((xcon) => (
                       <option key={xcon.id} value={xcon.id}>
                         {xcon.name} ({xcon.email})
@@ -304,8 +364,8 @@ export default function ParticipantsPage() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                    Add Participant
+                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                    Create Participant
                   </Button>
                 </div>
               </form>
