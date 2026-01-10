@@ -123,6 +123,12 @@ export default function XConDashboard() {
       icon: <Clock className="h-5 w-5" />,
       active: false,
     },
+    {
+      label: "Notifications",
+      href: "/xcon/notifications",
+      icon: <AlertCircle className="h-5 w-5" />,
+      active: false,
+    },
   ]
 
   const pendingAnswers = answers.filter((a) => a.status === "pending")

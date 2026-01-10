@@ -194,6 +194,12 @@ export default function SuperAdminDashboard() {
       icon: <Clock className="h-5 w-5" />,
       active: false,
     },
+    {
+      label: "Notifications",
+      href: "/super-admin/notifications",
+      icon: <AlertCircle className="h-5 w-5" />,
+      active: false,
+    },
   ]
 
   if (loading) {

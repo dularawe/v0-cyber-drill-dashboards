@@ -155,6 +155,18 @@ export default function LeaderDashboard() {
       icon: <AlertCircle className="h-5 w-5" />,
       active: false,
     },
+    {
+      label: "Answer Review",
+      href: "/leader/answers",
+      icon: <CheckCircle2 className="h-5 w-5" />,
+      active: false,
+    },
+    {
+      label: "Notifications",
+      href: "/leader/notifications",
+      icon: <AlertCircle className="h-5 w-5" />,
+      active: false,
+    },
   ]
 
   return (
