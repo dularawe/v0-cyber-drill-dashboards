@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CheckCircle, AlertCircle, User, Clock } from "lucide-react"
+import { CheckCircle, AlertCircle, User, Clock, Bell } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
@@ -133,7 +133,7 @@ export default function XConDashboard() {
     {
       label: "Notifications",
       href: "/xcon/notifications",
-      icon: <AlertCircle className="h-5 w-5" />,
+      icon: <Bell className="h-5 w-5" />,
       active: false,
     },
   ]

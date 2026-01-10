@@ -347,51 +347,93 @@ export default function SuperAdminDashboard() {
 
             {currentDrill ? (
               <>
-                {/* Current Drill Configuration */}
-                <Card className="border-border bg-card">
+                {/* Drill Management Section */}
+                <Card className="border-border bg-gradient-to-r from-blue-50 to-indigo-50">
                   <CardHeader>
-                    <CardTitle>Current Drill: {currentDrill.name}</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Play className="h-5 w-5 text-primary" />
+                      Drill Management & Control
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <StatChip label="Status" value={currentDrill.status} />
+                      <StatChip label="Drill Name" value={currentDrill.name} />
+                      <StatChip label="Status" value={currentDrill.status.toUpperCase()} />
                       <StatChip
                         label="Time Remaining"
                         value={sessionActive ? formatTime(timeRemaining) : "Paused"}
                         variant={sessionActive ? "warning" : "default"}
                       />
-                      <StatChip label="Start Time" value={new Date(currentDrill.start_time).toLocaleTimeString()} />
-                      <StatChip label="End Time" value={new Date(currentDrill.end_time).toLocaleTimeString()} />
+                      <StatChip label="Session" value={sessionActive ? "LIVE" : "READY"} variant="destructive" />
                     </div>
 
-                    {/* Session Controls */}
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-card rounded-lg border border-border">
+                      <div>
+                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
+                          Start Time
+                        </p>
+                        <p className="font-mono text-sm font-semibold mt-2">
+                          {new Date(currentDrill.start_time).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">End Time</p>
+                        <p className="font-mono text-sm font-semibold mt-2">
+                          {new Date(currentDrill.end_time).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Control Buttons */}
+                    <div className="flex gap-3 pt-4 border-t border-border">
                       {!sessionActive ? (
                         <Button
                           onClick={handleStartDrill}
-                          className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="gap-2 bg-green-600 hover:bg-green-700 text-white flex-1"
+                          size="lg"
                         >
-                          <Play className="h-4 w-4" />
+                          <Play className="h-5 w-5" />
                           Start Drill
                         </Button>
                       ) : (
                         <>
                           <Button
                             onClick={handlePauseDrill}
-                            className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-white"
+                            className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-white flex-1"
+                            size="lg"
                           >
-                            <Pause className="h-4 w-4" />
+                            <Pause className="h-5 w-5" />
                             Pause Drill
                           </Button>
                           <Button
                             onClick={handleEndDrill}
-                            className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            className="gap-2 bg-red-600 hover:bg-red-700 text-white flex-1"
+                            size="lg"
                           >
-                            <Square className="h-4 w-4" />
+                            <Square className="h-5 w-5" />
                             End Drill
                           </Button>
                         </>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Current Drill Configuration */}
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <CardTitle>Session Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-secondary/30 rounded border border-border">
+                        <p className="text-xs text-muted-foreground font-semibold mb-1">Session Status</p>
+                        <p className="font-semibold text-foreground capitalize">{currentDrill.status}</p>
+                      </div>
+                      <div className="p-3 bg-secondary/30 rounded border border-border">
+                        <p className="text-xs text-muted-foreground font-semibold mb-1">Time Remaining</p>
+                        <p className="font-mono font-semibold text-foreground">{formatTime(timeRemaining)}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

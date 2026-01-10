@@ -38,7 +38,7 @@ export default function LandingPage() {
         setCurrentSession(upcoming)
         if (upcoming.status === "live") {
           setDrillStarted(true)
-          const userRole = localStorage.getItem("userRole") || "leader"
+          const userRole = sessionStorage.getItem("userRole") || "leader"
           const dashboardRoute = userRole === "xcon" ? "/xcon" : userRole === "super-admin" ? "/super-admin" : "/leader"
           router.push(dashboardRoute)
         } else {

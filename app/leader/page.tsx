@@ -190,19 +190,19 @@ export default function LeaderDashboard() {
     {
       label: "Live Standings",
       href: "/leader/standings",
-      icon: <AlertCircle className="h-5 w-5" />,
+      icon: <CheckCircle2 className="h-5 w-5" />,
       active: false,
     },
     {
       label: "Answer Review",
       href: "/leader/answers",
-      icon: <CheckCircle2 className="h-5 w-5" />,
+      icon: <Clock className="h-5 w-5" />,
       active: false,
     },
     {
       label: "Notifications",
       href: "/leader/notifications",
-      icon: <AlertCircle className="h-5 w-5" />,
+      icon: <Bell className="h-5 w-5" />,
       badge: unreadCount > 0 ? unreadCount : undefined,
       active: false,
     },
