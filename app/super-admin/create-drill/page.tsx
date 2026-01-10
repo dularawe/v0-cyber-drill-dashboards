@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Clock, Plus, X, AlertCircle, CheckCircle2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
@@ -42,7 +42,7 @@ export default function CreateDrillPage() {
     },
   ]
 
-  useState(() => {
+  useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const questions = await getQuestions()
@@ -53,7 +53,7 @@ export default function CreateDrillPage() {
       }
     }
     fetchQuestions()
-  })
+  }, [])
 
   const handleCreateDrill = async () => {
     if (!drillName.trim()) {
