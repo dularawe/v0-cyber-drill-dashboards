@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type ENUM('info', 'success', 'warning', 'error', 'submission', 'approval') DEFAULT 'info',
+  recipient_id INT,
+  recipient_role VARCHAR(50),
+  is_broadcast BOOLEAN DEFAULT FALSE,
+  is_read BOOLEAN DEFAULT FALSE,
+  related_entity_type VARCHAR(50),
+  related_entity_id INT,
+  created_by INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  read_at TIMESTAMP NULL,
+  FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_recipient_id (recipient_id),
+  INDEX idx_is_read (is_read),
+  INDEX idx_created_at (created_at),
+  INDEX idx_type (type)
+);

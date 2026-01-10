@@ -383,3 +383,55 @@ export async function getLeaderboard(sessionId: string) {
     throw error
   }
 }
+
+// Notifications
+export async function getNotifications() {
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/notifications`)
+    if (!response.ok) throw new Error("Failed to fetch notifications")
+    return response.json()
+  } catch (error) {
+    console.error("[v0] Get notifications error:", error)
+    throw error
+  }
+}
+
+export async function sendNotification(notification: any) {
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/notifications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(notification),
+    })
+    if (!response.ok) throw new Error("Failed to send notification")
+    return response.json()
+  } catch (error) {
+    console.error("[v0] Send notification error:", error)
+    throw error
+  }
+}
+
+export async function markNotificationAsRead(id: string) {
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/notifications/${id}/read`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+    if (!response.ok) throw new Error("Failed to mark notification as read")
+    return response.json()
+  } catch (error) {
+    console.error("[v0] Mark notification error:", error)
+    throw error
+  }
+}
+
+export async function deleteNotification(id: string) {
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/notifications/${id}`, { method: "DELETE" })
+    if (!response.ok) throw new Error("Failed to delete notification")
+    return response.json()
+  } catch (error) {
+    console.error("[v0] Delete notification error:", error)
+    throw error
+  }
+}

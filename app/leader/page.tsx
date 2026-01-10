@@ -2,21 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, MessageCircle, AlertCircle, Clock } from "lucide-react"
+import { Send, MessageCircle, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { submitAnswer } from "@/lib/api-client"
-
-interface Message {
-  id: string
-  type: "question" | "instruction" | "result"
-  content: string
-  timestamp: string
-}
+import { submitAnswer, getDrillSessions } from "@/lib/api-client"
 
 interface Question {
   id: string
@@ -26,18 +19,28 @@ interface Question {
   timeLimit: number
 }
 
+interface Session {
+  id: string
+  name: string
+  status: string
+  start_time: string
+  end_time: string
+}
+
 export default function LeaderDashboard() {
   const router = useRouter()
-  const [sessionActive, setSessionActive] = useState(true)
-  const [timeRemaining, setTimeRemaining] = useState(900)
+  const [sessionActive, setSessionActive] = useState(false)
+  const [currentSession, setCurrentSession] = useState<Session | null>(null)
+  const [timeRemaining, setTimeRemaining] = useState(0)
   const [currentAnswer, setCurrentAnswer] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [questionTimeRemaining, setQuestionTimeRemaining] = useState(300)
   const [isQuestionExpired, setIsQuestionExpired] = useState(false)
+  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
-    id: "q-2",
-    number: 2,
-    content: "What are the main components of a security incident response plan?",
+    id: "q-1",
+    number: 1,
+    content: "Loading question...",
     status: "pending",
     timeLimit: 300,
   })
@@ -47,7 +50,29 @@ export default function LeaderDashboard() {
     if (!user) {
       router.push("/login")
     }
+    fetchActiveSession()
   }, [router])
+
+  const fetchActiveSession = async () => {
+    try {
+      const sessions = await getDrillSessions()
+      const active = sessions.find((s: any) => s.status === "live")
+      if (active) {
+        setCurrentSession(active)
+        setSessionActive(true)
+        calculateTimeRemaining(active.end_time)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching session:", error)
+    }
+  }
+
+  const calculateTimeRemaining = (endTime: string) => {
+    const end = new Date(endTime).getTime()
+    const now = new Date().getTime()
+    const remaining = Math.max(0, Math.floor((end - now) / 1000))
+    setTimeRemaining(remaining)
+  }
 
   useEffect(() => {
     if (!sessionActive || currentQuestion.status !== "pending" || isQuestionExpired) return
@@ -68,58 +93,53 @@ export default function LeaderDashboard() {
 
   const handleTimeExpired = async () => {
     if (currentQuestion.status === "pending") {
+      setAlert({ type: "error", message: "Time limit exceeded. Question marked as unanswered." })
       setCurrentAnswer("")
-      // Auto-load next question
       moveToNextQuestion()
     }
   }
 
   const moveToNextQuestion = () => {
-    // Reset timer and move to next
     setQuestionTimeRemaining(300)
     setIsQuestionExpired(false)
     setCurrentQuestion({
-      id: "q-3",
-      number: 3,
-      content: "What are some common methods for detecting zero-day vulnerabilities?",
+      id: "q-2",
+      number: 2,
+      content: "What are the main components of a security incident response plan?",
       status: "pending",
       timeLimit: 300,
     })
   }
 
-  const [messages] = useState<Message[]>([
-    {
-      id: "msg-1",
-      type: "instruction",
-      content: "Welcome to Cyber Drill 2025. The drill will begin in 60 seconds. Review the objectives and be ready.",
-      timestamp: "2:00 PM",
-    },
-    {
-      id: "msg-2",
-      type: "question",
-      content: "Question 1: Define a zero-day vulnerability and explain why it's critical to patch.",
-      timestamp: "2:01 PM",
-    },
-    {
-      id: "msg-3",
-      type: "result",
-      content: "Your answer to Question 1 was approved. +25 points",
-      timestamp: "2:05 PM",
-    },
-    {
-      id: "msg-4",
-      type: "question",
-      content: "Question 2: What are the main components of a security incident response plan?",
-      timestamp: "2:06 PM",
-    },
-  ])
+  const handleSubmitAnswer = async () => {
+    if (!currentAnswer.trim()) {
+      setAlert({ type: "error", message: "Please enter an answer before submitting." })
+      return
+    }
 
-  const [stats] = useState({
-    questionsAnswered: 1,
-    questionsCorrect: 1,
-    score: 25,
-    rank: 2,
-  })
+    setIsSubmitting(true)
+    try {
+      await submitAnswer({
+        session_id: currentSession?.id || "1",
+        question_id: currentQuestion.id,
+        answer_text: currentAnswer,
+      })
+      setAlert({ type: "success", message: "Answer submitted successfully!" })
+      setCurrentAnswer("")
+      moveToNextQuestion()
+    } catch (error) {
+      console.error("[v0] Error submitting answer:", error)
+      setAlert({ type: "error", message: "Failed to submit answer. Please try again." })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
 
   const sidebarItems = [
     {
@@ -136,87 +156,47 @@ export default function LeaderDashboard() {
     },
   ]
 
-  const handleSubmitAnswer = async () => {
-    if (!currentAnswer.trim()) return
-
-    setIsSubmitting(true)
-    try {
-      await submitAnswer({
-        session_id: "1",
-        question_id: currentQuestion.id,
-        answer_text: currentAnswer,
-      })
-      setCurrentAnswer("")
-      moveToNextQuestion()
-    } catch (error) {
-      console.error("Error submitting answer:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
   return (
     <div className="flex h-screen bg-background">
       <DashboardSidebar items={sidebarItems} />
       <main className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader
-          title="Cyber Drill Exercise"
+          title={currentSession?.name || "Cyber Drill Exercise"}
           status={sessionActive ? "In Progress" : "Waiting"}
           userRole="Participant"
         />
         <CountdownBanner isActive={sessionActive} secondsRemaining={timeRemaining} />
 
+        {alert && (
+          <div
+            className={`mx-4 mt-4 p-4 rounded-lg flex items-center gap-2 ${alert.type === "success" ? "bg-green-100 border-l-4 border-green-500 text-green-700" : "bg-red-100 border-l-4 border-red-500 text-red-700"}`}
+          >
+            {alert.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <span>{alert.message}</span>
+          </div>
+        )}
+
         <div className="flex-1 overflow-hidden flex gap-6 p-8">
-          {/* Left: Chat/Questions */}
           <div className="flex-1 flex flex-col">
-            {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-3 mb-6">
-              <StatChip label="Answered" value={stats.questionsAnswered} />
-              <StatChip label="Correct" value={stats.questionsCorrect} variant="success" />
-              <StatChip label="Score" value={stats.score} variant="success" />
-              <StatChip label="Rank" value={`#${stats.rank}`} />
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <StatChip label="Session Time" value={formatTime(timeRemaining)} />
+              <StatChip label="Question Time" value={formatTime(questionTimeRemaining)} variant="warning" />
+              <StatChip label="Status" value={currentQuestion.status} variant="default" />
             </div>
 
-            {/* Chat Panel */}
             <Card className="flex-1 border-border bg-card flex flex-col overflow-hidden">
               <CardHeader className="border-b border-border">
-                <CardTitle>Question Feed</CardTitle>
+                <CardTitle>Question {currentQuestion.number}</CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`p-4 rounded-lg ${
-                      msg.type === "question"
-                        ? "bg-primary/10 border-l-4 border-primary"
-                        : msg.type === "result"
-                          ? "bg-accent/10 border-l-4 border-accent"
-                          : "bg-secondary/50 border-l-4 border-border"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase">
-                        {msg.type === "question" ? "Question" : msg.type === "result" ? "Result" : "Announcement"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
-                    </div>
-                    <p className="text-sm text-foreground">{msg.content}</p>
-                  </div>
-                ))}
+              <CardContent className="flex-1 overflow-y-auto p-4">
+                <p className="text-base text-foreground">{currentQuestion.content}</p>
               </CardContent>
             </Card>
 
-            {/* Answer Input */}
             {currentQuestion.status === "pending" && !isQuestionExpired && (
               <Card className="border-border bg-card mt-6">
                 <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base">Question {currentQuestion.number}</CardTitle>
+                  <CardTitle className="text-base">Your Answer</CardTitle>
                   <div
                     className={`flex items-center gap-2 text-sm font-semibold ${questionTimeRemaining < 60 ? "text-destructive" : "text-foreground"}`}
                   >
@@ -225,10 +205,6 @@ export default function LeaderDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <div className="mb-4">
-                    <p className="text-sm text-foreground">{currentQuestion.content}</p>
-                  </div>
-
                   <div className="space-y-3">
                     <textarea
                       value={currentAnswer}

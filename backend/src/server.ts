@@ -8,6 +8,7 @@ import xconRoutes from "./routes/xcons"
 import sessionRoutes from "./routes/sessions"
 import answerRoutes from "./routes/answers"
 import leaderboardRoutes from "./routes/leaderboard"
+import notificationRoutes from "./routes/notifications"
 import pool from "./config/database"
 
 dotenv.config()
@@ -55,6 +56,7 @@ app.use("/api/xcons", xconRoutes)
 app.use("/api/sessions", sessionRoutes)
 app.use("/api/answers", answerRoutes)
 app.use("/api/leaderboard", leaderboardRoutes)
+app.use("/api/notifications", notificationRoutes)
 
 app.get("/health", (req, res) => {
   res.json({ status: "Backend is running" })

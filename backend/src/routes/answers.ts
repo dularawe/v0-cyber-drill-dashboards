@@ -29,18 +29,33 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
     const { session_id, question_id, answer_text } = req.body
 
     if (!session_id || !question_id || !answer_text) {
-      return res.status(400).json({ error: "Missing required fields" })
+      return res.status(400).json({ error: "Missing required fields: session_id, question_id, answer_text" })
+    }
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "User not authenticated" })
     }
 
     const result: any = await query(
-      "INSERT INTO answers (session_id, question_id, leader_id, answer_text, status) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO answers (session_id, question_id, leader_id, answer_text, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
       [session_id, question_id, req.user.id, answer_text, "submitted"],
     )
 
-    res.json({ id: result.insertId, status: "submitted", created_at: new Date() })
+    if (!result || !result.insertId) {
+      return res.status(500).json({ error: "Failed to insert answer record" })
+    }
+
+    console.log("[v0] Answer submitted successfully:", result.insertId)
+    res.status(201).json({
+      id: result.insertId,
+      session_id,
+      question_id,
+      status: "submitted",
+      created_at: new Date().toISOString(),
+    })
   } catch (error) {
     console.error("[v0] Error submitting answer:", error)
-    res.status(500).json({ error: "Failed to submit answer" })
+    res.status(500).json({ error: "Failed to submit answer", details: String(error) })
   }
 })
 
