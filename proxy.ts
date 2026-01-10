@@ -1,8 +1,10 @@
+import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { updateSession } from "@/lib/supabase/proxy"
 
-export async function proxy(request: NextRequest) {
-  return await updateSession(request)
+export function proxy(request: NextRequest) {
+  // Simple middleware - no Supabase session management
+  // Authentication is handled by the Node.js backend with JWT
+  return NextResponse.next()
 }
 
 export const config = {
