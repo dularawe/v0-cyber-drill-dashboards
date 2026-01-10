@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { getDrillSessions } from "@/lib/api-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 interface Session {
   id: string
@@ -19,18 +20,30 @@ export default function LandingPage() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null)
   const [timeUntilStart, setTimeUntilStart] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [drillStarted, setDrillStarted] = useState(false)
 
   useEffect(() => {
     fetchUpcomingDrill()
+    const pollInterval = setInterval(fetchUpcomingDrill, 5000)
+    return () => clearInterval(pollInterval)
   }, [])
 
   const fetchUpcomingDrill = async () => {
     try {
       const sessions = await getDrillSessions()
-      const upcoming = sessions.find((s: any) => s.status === "scheduled" || s.status === "live")
+      const upcoming = sessions.find(
+        (s: any) => s.status === "scheduled" || s.status === "live" || s.status === "draft",
+      )
       if (upcoming) {
         setCurrentSession(upcoming)
-        calculateCountdown(upcoming.start_time)
+        if (upcoming.status === "live") {
+          setDrillStarted(true)
+          const userRole = localStorage.getItem("userRole") || "leader"
+          const dashboardRoute = userRole === "xcon" ? "/xcon" : userRole === "super-admin" ? "/super-admin" : "/leader"
+          router.push(dashboardRoute)
+        } else {
+          calculateCountdown(upcoming.start_time)
+        }
       }
     } catch (error) {
       console.error("[v0] Error fetching drill:", error)
@@ -44,21 +57,17 @@ export default function LandingPage() {
     const now = new Date().getTime()
     const remaining = Math.max(0, Math.floor((start - now) / 1000))
     setTimeUntilStart(remaining)
-
-    if (remaining <= 0) {
-      router.push("/leader")
-    }
   }
 
   useEffect(() => {
-    if (!currentSession) return
+    if (!currentSession || drillStarted) return
 
     const timer = setInterval(() => {
       calculateCountdown(currentSession.start_time)
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [currentSession])
+  }, [currentSession, drillStarted])
 
   const formatTime = (seconds: number) => {
     const days = Math.floor(seconds / 86400)
@@ -74,7 +83,7 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Loading drill information...</p>
@@ -86,10 +95,13 @@ export default function LandingPage() {
 
   if (!currentSession) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">No upcoming drills scheduled.</p>
+            <Button onClick={() => router.push("/")} className="mt-4">
+              Back to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -97,34 +109,69 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
       <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">{currentSession.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-8">
+        <CardHeader className="text-center space-y-6">
+          <div className="flex justify-center">
+            <Image
+              src="https://www.cert.gov.lk/wp-content/uploads/2024/11/logo-b-1.png"
+              alt="CERT Logo"
+              width={120}
+              height={120}
+              className="object-contain"
+            />
+          </div>
           <div>
-            <p className="text-muted-foreground mb-4">Drill starts in</p>
-            <div className="text-6xl font-bold text-primary">{formatTime(timeUntilStart)}</div>
+            <CardTitle className="text-3xl font-bold text-foreground">{currentSession.name}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">Cyber Security Drill Exercise</p>
+          </div>
+        </CardHeader>
+
+        <CardContent className="text-center space-y-8">
+          <div className="space-y-4">
+            <p className="text-lg font-semibold text-muted-foreground">Drill Starts In</p>
+            <div className="text-7xl font-bold text-blue-600 tracking-tight font-mono">
+              {formatTime(timeUntilStart)}
+            </div>
+            <p className="text-sm text-muted-foreground">Prepare your team for the upcoming cyber security exercise</p>
           </div>
 
-          <div className="bg-secondary/50 p-6 rounded-lg space-y-2">
-            <p className="text-sm text-muted-foreground">Start Time</p>
-            <p className="font-semibold">{new Date(currentSession.start_time).toLocaleString()}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Start Time</p>
+              <p className="font-mono text-sm font-semibold mt-2">
+                {new Date(currentSession.start_time).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-indigo-50 p-6 rounded-lg border border-indigo-200">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">End Time</p>
+              <p className="font-mono text-sm font-semibold mt-2">
+                {new Date(currentSession.end_time).toLocaleString()}
+              </p>
+            </div>
           </div>
 
-          <div className="bg-secondary/50 p-6 rounded-lg space-y-2">
-            <p className="text-sm text-muted-foreground">End Time</p>
-            <p className="font-semibold">{new Date(currentSession.end_time).toLocaleString()}</p>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-l-4 border-blue-500">
+            <p className="text-sm font-medium text-foreground mb-2">
+              Status: <span className="text-blue-600 font-bold">{currentSession.status.toUpperCase()}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              ✓ This page will automatically redirect when the drill starts.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              ✓ You will be directed to your appropriate dashboard based on your role.
+            </p>
           </div>
 
-          {timeUntilStart === 0 && (
-            <Button onClick={() => router.push("/leader")} className="w-full" size="lg">
-              Start Drill Now
+          {timeUntilStart === 0 && !drillStarted && (
+            <Button
+              onClick={() => router.push("/leader")}
+              className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700"
+              size="lg"
+            >
+              Enter Drill Now
             </Button>
           )}
-
-          <p className="text-xs text-muted-foreground">This page will automatically redirect when the drill starts.</p>
         </CardContent>
       </Card>
     </div>
