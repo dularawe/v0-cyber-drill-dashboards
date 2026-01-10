@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, MessageCircle, AlertCircle } from "lucide-react"
+import { Send, MessageCircle, AlertCircle, Clock } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { submitAnswer } from "@/lib/api-client"
 
 interface Message {
   id: string
@@ -22,6 +23,7 @@ interface Question {
   number: number
   content: string
   status: "pending" | "submitted" | "approved" | "rejected"
+  timeLimit: number
 }
 
 export default function LeaderDashboard() {
@@ -29,6 +31,16 @@ export default function LeaderDashboard() {
   const [sessionActive, setSessionActive] = useState(true)
   const [timeRemaining, setTimeRemaining] = useState(900)
   const [currentAnswer, setCurrentAnswer] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [questionTimeRemaining, setQuestionTimeRemaining] = useState(300)
+  const [isQuestionExpired, setIsQuestionExpired] = useState(false)
+  const [currentQuestion, setCurrentQuestion] = useState<Question>({
+    id: "q-2",
+    number: 2,
+    content: "What are the main components of a security incident response plan?",
+    status: "pending",
+    timeLimit: 300,
+  })
 
   useEffect(() => {
     const user = sessionStorage.getItem("currentUser")
@@ -36,6 +48,44 @@ export default function LeaderDashboard() {
       router.push("/login")
     }
   }, [router])
+
+  useEffect(() => {
+    if (!sessionActive || currentQuestion.status !== "pending" || isQuestionExpired) return
+
+    const timer = setInterval(() => {
+      setQuestionTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setIsQuestionExpired(true)
+          handleTimeExpired()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [sessionActive, currentQuestion.status, isQuestionExpired])
+
+  const handleTimeExpired = async () => {
+    if (currentQuestion.status === "pending") {
+      setCurrentAnswer("")
+      // Auto-load next question
+      moveToNextQuestion()
+    }
+  }
+
+  const moveToNextQuestion = () => {
+    // Reset timer and move to next
+    setQuestionTimeRemaining(300)
+    setIsQuestionExpired(false)
+    setCurrentQuestion({
+      id: "q-3",
+      number: 3,
+      content: "What are some common methods for detecting zero-day vulnerabilities?",
+      status: "pending",
+      timeLimit: 300,
+    })
+  }
 
   const [messages] = useState<Message[]>([
     {
@@ -64,13 +114,6 @@ export default function LeaderDashboard() {
     },
   ])
 
-  const [currentQuestion] = useState<Question>({
-    id: "q-2",
-    number: 2,
-    content: "What are the main components of a security incident response plan?",
-    status: "pending",
-  })
-
   const [stats] = useState({
     questionsAnswered: 1,
     questionsCorrect: 1,
@@ -93,10 +136,29 @@ export default function LeaderDashboard() {
     },
   ]
 
-  const handleSubmitAnswer = () => {
-    if (currentAnswer.trim()) {
+  const handleSubmitAnswer = async () => {
+    if (!currentAnswer.trim()) return
+
+    setIsSubmitting(true)
+    try {
+      await submitAnswer({
+        session_id: "1",
+        question_id: currentQuestion.id,
+        answer_text: currentAnswer,
+      })
       setCurrentAnswer("")
+      moveToNextQuestion()
+    } catch (error) {
+      console.error("Error submitting answer:", error)
+    } finally {
+      setIsSubmitting(false)
     }
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
   return (
@@ -113,7 +175,7 @@ export default function LeaderDashboard() {
         <div className="flex-1 overflow-hidden flex gap-6 p-8">
           {/* Left: Chat/Questions */}
           <div className="flex-1 flex flex-col">
-            {/* Stats Bar - Removed attempts card */}
+            {/* Stats Bar */}
             <div className="grid grid-cols-4 gap-3 mb-6">
               <StatChip label="Answered" value={stats.questionsAnswered} />
               <StatChip label="Correct" value={stats.questionsCorrect} variant="success" />
@@ -151,10 +213,16 @@ export default function LeaderDashboard() {
             </Card>
 
             {/* Answer Input */}
-            {currentQuestion.status === "pending" && (
+            {currentQuestion.status === "pending" && !isQuestionExpired && (
               <Card className="border-border bg-card mt-6">
-                <CardHeader className="border-b border-border pb-3">
+                <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-base">Question {currentQuestion.number}</CardTitle>
+                  <div
+                    className={`flex items-center gap-2 text-sm font-semibold ${questionTimeRemaining < 60 ? "text-destructive" : "text-foreground"}`}
+                  >
+                    <Clock className="h-4 w-4" />
+                    {formatTime(questionTimeRemaining)}
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="mb-4">
@@ -166,16 +234,31 @@ export default function LeaderDashboard() {
                       value={currentAnswer}
                       onChange={(e) => setCurrentAnswer(e.target.value)}
                       placeholder="Type your answer here..."
-                      className="w-full h-24 p-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      disabled={isSubmitting}
+                      className="w-full h-24 p-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                     />
                     <Button
                       onClick={handleSubmitAnswer}
-                      disabled={!currentAnswer.trim()}
+                      disabled={!currentAnswer.trim() || isSubmitting}
                       className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       <Send className="h-4 w-4" />
-                      Submit Answer
+                      {isSubmitting ? "Submitting..." : "Submit Answer"}
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {isQuestionExpired && (
+              <Card className="border-border bg-destructive/10 mt-6">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 text-destructive">
+                    <AlertCircle className="h-5 w-5" />
+                    <div>
+                      <p className="font-semibold">Time Limit Exceeded</p>
+                      <p className="text-sm">This question has been marked as unanswered. Loading next question...</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -8,11 +8,23 @@ import xconRoutes from "./routes/xcons"
 import sessionRoutes from "./routes/sessions"
 import answerRoutes from "./routes/answers"
 import leaderboardRoutes from "./routes/leaderboard"
+import pool from "./config/database"
 
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
+
+pool
+  .getConnection()
+  .then((conn) => {
+    console.log("✓ Database connected successfully")
+    conn.release()
+  })
+  .catch((err) => {
+    console.error("✗ Database connection failed:", err.message)
+    console.error("  Make sure MySQL is running and credentials in .env are correct")
+  })
 
 // Middleware
 app.use(cors())
@@ -49,5 +61,5 @@ app.get("/health", (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`Cyber Drill Backend running on port ${PORT}`)
+  console.log(`✓ Cyber Drill Backend running on http://localhost:${PORT}`)
 })

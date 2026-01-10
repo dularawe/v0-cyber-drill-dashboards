@@ -19,6 +19,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
     const answers = await query(sql, params)
     res.json(answers)
   } catch (error) {
+    console.error("[v0] Error fetching answers:", error)
     res.status(500).json({ error: "Failed to fetch answers" })
   }
 })
@@ -27,14 +28,36 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { session_id, question_id, answer_text } = req.body
 
+    if (!session_id || !question_id || !answer_text) {
+      return res.status(400).json({ error: "Missing required fields" })
+    }
+
     const result: any = await query(
-      "INSERT INTO answers (session_id, question_id, leader_id, answer_text) VALUES (?, ?, ?, ?)",
-      [session_id, question_id, req.user.id, answer_text],
+      "INSERT INTO answers (session_id, question_id, leader_id, answer_text, status) VALUES (?, ?, ?, ?, ?)",
+      [session_id, question_id, req.user.id, answer_text, "submitted"],
     )
 
-    res.json({ id: result.insertId, status: "submitted" })
+    res.json({ id: result.insertId, status: "submitted", created_at: new Date() })
   } catch (error) {
+    console.error("[v0] Error submitting answer:", error)
     res.status(500).json({ error: "Failed to submit answer" })
+  }
+})
+
+router.post("/:id/timeout", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { question_id, session_id } = req.body
+
+    // Mark as rejected due to timeout
+    const result: any = await query(
+      "INSERT INTO answers (session_id, question_id, leader_id, answer_text, status, feedback) VALUES (?, ?, ?, ?, ?, ?)",
+      [session_id, question_id, req.user.id, "[No answer - Time limit exceeded]", "rejected", "Time limit exceeded"],
+    )
+
+    res.json({ id: result.insertId, status: "rejected", reason: "timeout" })
+  } catch (error) {
+    console.error("[v0] Error marking timeout:", error)
+    res.status(500).json({ error: "Failed to mark timeout" })
   }
 })
 
@@ -49,6 +72,7 @@ router.post("/:id/approve", authMiddleware, xconOnly, async (req: Request, res: 
     ])
     res.json({ id: req.params.id, status: "approved" })
   } catch (error) {
+    console.error("[v0] Error approving answer:", error)
     res.status(500).json({ error: "Failed to approve answer" })
   }
 })
@@ -64,6 +88,7 @@ router.post("/:id/reject", authMiddleware, xconOnly, async (req: Request, res: R
     ])
     res.json({ id: req.params.id, status: "rejected" })
   } catch (error) {
+    console.error("[v0] Error rejecting answer:", error)
     res.status(500).json({ error: "Failed to reject answer" })
   }
 })
@@ -73,6 +98,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
     await query("DELETE FROM answers WHERE id = ?", [req.params.id])
     res.json({ message: "Answer deleted" })
   } catch (error) {
+    console.error("[v0] Error deleting answer:", error)
     res.status(500).json({ error: "Failed to delete answer" })
   }
 })

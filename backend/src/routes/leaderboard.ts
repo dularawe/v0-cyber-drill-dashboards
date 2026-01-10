@@ -6,7 +6,7 @@ const router = Router()
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.query
+    const sessionId = req.query.sessionId || 1
 
     const leaderboard: any = await query(
       `SELECT l.*, u.name, u.email FROM leaderboard l 
@@ -16,8 +16,9 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       [sessionId],
     )
 
-    res.json(leaderboard)
+    res.json(leaderboard || [])
   } catch (error) {
+    console.log("[v0] Leaderboard error:", error)
     res.status(500).json({ error: "Failed to fetch leaderboard" })
   }
 })

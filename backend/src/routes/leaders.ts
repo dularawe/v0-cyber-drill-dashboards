@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express"
 import { query } from "../config/database"
 import { authMiddleware, adminOnly } from "../middleware/auth"
+import bcrypt from "bcryptjs"
 
 const router = Router()
 
@@ -16,16 +17,25 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
     const { email, name, password, xcon_id } = req.body
+
+    console.log("[v0] Creating leader with:", { email, name, xcon_id })
+
+    const hashedPassword = await bcrypt.hash(password, 10)
     const result: any = await query("INSERT INTO users (email, name, password, role, xcon_id) VALUES (?, ?, ?, ?, ?)", [
       email,
       name,
-      password,
+      hashedPassword,
       "leader",
       xcon_id,
     ])
+
+    console.log("[v0] Leader created successfully with ID:", result.insertId)
     res.json({ id: result.insertId, email, name, xcon_id })
   } catch (error) {
-    res.status(500).json({ error: "Failed to create leader" })
+    console.log("[v0] Create leader error:", error instanceof Error ? error.message : error)
+    res
+      .status(500)
+      .json({ error: "Failed to create leader", details: error instanceof Error ? error.message : "Unknown error" })
   }
 })
 

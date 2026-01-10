@@ -15,15 +15,15 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { text, category, difficulty, time_limit } = req.body
-
+    const { text, category, difficulty, timeLimit } = req.body
     const result: any = await query(
       "INSERT INTO questions (text, category, difficulty, time_limit) VALUES (?, ?, ?, ?)",
-      [text, category, difficulty, time_limit],
+      [text, category, difficulty, timeLimit],
     )
 
-    res.json({ id: result.insertId, text, category, difficulty, time_limit })
+    res.json({ id: result.insertId, text, category, difficulty, timeLimit })
   } catch (error) {
+    console.log("[v0] Create question error:", error)
     res.status(500).json({ error: "Failed to create question" })
   }
 })

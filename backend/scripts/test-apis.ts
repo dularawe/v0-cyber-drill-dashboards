@@ -1,5 +1,3 @@
-import fetch from "node-fetch"
-
 const API_URL = "http://localhost:5000/api"
 let authToken = ""
 
@@ -33,14 +31,14 @@ async function test(method: string, endpoint: string, body?: any): Promise<boole
     }
 
     const response = await fetch(`${API_URL}${endpoint}`, options)
-    const data = await response.json()
+    const data: any = await response.json()
 
     if (response.ok || response.status === 201) {
       console.log(`✓ Success (${response.status})`)
       results.push({ endpoint, method, status: "PASS", statusCode: response.status })
 
       // Store token if login was successful
-      if (endpoint === "/auth/signin" && data.token) {
+      if (endpoint === "/auth/signin" && data?.token) {
         authToken = data.token
         console.log("✓ Token stored for authenticated requests")
       }
@@ -48,7 +46,7 @@ async function test(method: string, endpoint: string, body?: any): Promise<boole
       return true
     } else {
       console.log(`✗ Failed (${response.status})`)
-      results.push({ endpoint, method, status: "FAIL", statusCode: response.status, error: data.message })
+      results.push({ endpoint, method, status: "FAIL", statusCode: response.status, error: data?.message })
       return false
     }
   } catch (err: any) {
