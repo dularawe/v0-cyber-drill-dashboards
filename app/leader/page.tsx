@@ -119,16 +119,17 @@ export default function LeaderDashboard() {
 
     setIsSubmitting(true)
     try {
+      const questionIdNumeric = currentQuestion.id.replace("q-", "")
       await submitAnswer({
         session_id: currentSession?.id || "1",
-        question_id: currentQuestion.id,
+        question_id: questionIdNumeric,
         answer_text: currentAnswer,
       })
       setAlert({ type: "success", message: "Answer submitted successfully!" })
       setCurrentAnswer("")
       moveToNextQuestion()
     } catch (error) {
-      console.error("[v0] Error submitting answer:", error)
+      console.error("[v0] API Error:", error)
       setAlert({ type: "error", message: "Failed to submit answer. Please try again." })
     } finally {
       setIsSubmitting(false)
