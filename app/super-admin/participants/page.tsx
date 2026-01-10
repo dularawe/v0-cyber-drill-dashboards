@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Edit2, Trash2, X, Eye, EyeOff } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Users, Clock, FileText } from "lucide-react"
+import { getLeaders, createLeader, deleteLeader, getXCons } from "@/lib/api-client"
 
 interface Participant {
   id: string
@@ -20,10 +21,17 @@ interface Participant {
   status: "active" | "inactive"
 }
 
+interface XConOption {
+  id: string
+  name: string
+  email: string
+}
+
 export default function ParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([])
-
-  const availableXCons: string[] = []
+  const [xconOptions, setXconOptions] = useState<XConOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -35,20 +43,75 @@ export default function ParticipantsPage() {
     xconAssigned: "",
   })
 
-  const handleAddParticipant = (e: React.FormEvent) => {
-    e.preventDefault()
-    const newParticipant: Participant = {
-      id: Date.now().toString(),
-      ...formData,
-      status: "active",
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Fetch leaders/participants
+      const leadersData = await getLeaders()
+      const formattedLeaders = leadersData.map((leader: any) => ({
+        id: leader.id,
+        name: leader.name,
+        email: leader.email,
+        password: "",
+        team: "Team Default",
+        xconAssigned: leader.xcon_id || "Unassigned",
+        status: "active",
+      }))
+      setParticipants(formattedLeaders)
+
+      const xconsData = await getXCons()
+      setXconOptions(xconsData)
+    } catch (err) {
+      setError("Failed to fetch data")
+      console.error("[v0] Fetch data error:", err)
+    } finally {
+      setLoading(false)
     }
-    setParticipants([...participants, newParticipant])
-    setFormData({ name: "", email: "", password: "", team: "", xconAssigned: "" })
-    setShowAddModal(false)
   }
 
-  const handleDeleteParticipant = (id: string) => {
-    setParticipants(participants.filter((p) => p.id !== id))
+  const handleAddParticipant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const newLeader = await createLeader({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        xcon_id: formData.xconAssigned,
+      })
+
+      const formattedParticipant: Participant = {
+        id: newLeader.id,
+        name: newLeader.name,
+        email: newLeader.email,
+        password: "",
+        team: formData.team,
+        xconAssigned: formData.xconAssigned || "Unassigned",
+        status: "active",
+      }
+
+      setParticipants([...participants, formattedParticipant])
+      setFormData({ name: "", email: "", password: "", team: "", xconAssigned: "" })
+      setShowAddModal(false)
+    } catch (err) {
+      setError("Failed to create participant")
+      console.error("[v0] Create participant error:", err)
+    }
+  }
+
+  const handleDeleteParticipant = async (id: string) => {
+    try {
+      await deleteLeader(id)
+      setParticipants(participants.filter((p) => p.id !== id))
+    } catch (err) {
+      setError("Failed to delete participant")
+      console.error("[v0] Delete participant error:", err)
+    }
   }
 
   const sidebarItems = [
@@ -79,51 +142,68 @@ export default function ParticipantsPage() {
               </Button>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-destructive">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Participants Table */}
             <Card className="border-border bg-card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border bg-secondary/50">
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Email</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">X-CON</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participants.map((participant) => (
-                      <tr key={participant.id} className="border-b border-border hover:bg-secondary/50 transition">
-                        <td className="px-6 py-4 text-sm font-medium text-foreground">{participant.name}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{participant.email}</td>
-                        <td className="px-6 py-4 text-sm text-foreground">{participant.team}</td>
-                        <td className="px-6 py-4 text-sm text-foreground">{participant.xconAssigned}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
-                            {participant.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2 text-destructive hover:text-destructive bg-transparent"
-                              onClick={() => handleDeleteParticipant(participant.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+                {loading ? (
+                  <div className="p-8 text-center text-muted-foreground">Loading participants...</div>
+                ) : participants.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No participants found. Add one to get started.
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/50">
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Email</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">X-CON</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                        <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {participants.map((participant) => (
+                        <tr key={participant.id} className="border-b border-border hover:bg-secondary/50 transition">
+                          <td className="px-6 py-4 text-sm font-medium text-foreground">{participant.name}</td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground">{participant.email}</td>
+                          <td className="px-6 py-4 text-sm text-foreground">{participant.team}</td>
+                          <td className="px-6 py-4 text-sm text-foreground">{participant.xconAssigned}</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent">
+                              {participant.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 text-destructive hover:text-destructive bg-transparent"
+                                onClick={() => handleDeleteParticipant(participant.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </Card>
           </div>
@@ -149,6 +229,7 @@ export default function ParticipantsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Jane Smith"
+                    required
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -160,6 +241,7 @@ export default function ParticipantsPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="leader@company.com"
+                    required
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -172,6 +254,7 @@ export default function ParticipantsPage() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Enter secure password"
+                      required
                       className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <button
@@ -191,6 +274,7 @@ export default function ParticipantsPage() {
                     value={formData.team}
                     onChange={(e) => setFormData({ ...formData, team: e.target.value })}
                     placeholder="e.g. Team Alpha"
+                    required
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -203,9 +287,9 @@ export default function ParticipantsPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="">Select X-CON Coordinator</option>
-                    {availableXCons.map((xcon) => (
-                      <option key={xcon} value={xcon}>
-                        {xcon}
+                    {xconOptions.map((xcon) => (
+                      <option key={xcon.id} value={xcon.id}>
+                        {xcon.name} ({xcon.email})
                       </option>
                     ))}
                   </select>

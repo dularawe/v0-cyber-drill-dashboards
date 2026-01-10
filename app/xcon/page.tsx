@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CheckCircle, AlertCircle, User, Clock } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
@@ -9,6 +9,7 @@ import { StatChip } from "@/components/stat-chip"
 import { ReviewDrawer } from "@/components/review-drawer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getAnswers, approveAnswer, rejectAnswer, getLeaders } from "@/lib/api-client"
 
 interface Answer {
   id: string
@@ -35,59 +36,73 @@ export default function XConDashboard() {
   const [timeRemaining, setTimeRemaining] = useState(1200)
   const [selectedAnswer, setSelectedAnswer] = useState<Answer | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [answers, setAnswers] = useState<Answer[]>([])
+  const [leaders, setLeaders] = useState<Leader[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [leaders] = useState<Leader[]>([
-    { id: "leader-1", name: "Sarah Chen", totalAnswers: 5, approvedAnswers: 4, pendingReview: 1 },
-    { id: "leader-2", name: "Marcus Johnson", totalAnswers: 4, approvedAnswers: 3, pendingReview: 1 },
-    { id: "leader-3", name: "Emma Wilson", totalAnswers: 3, approvedAnswers: 2, pendingReview: 1 },
-  ])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-  const [answers, setAnswers] = useState<Answer[]>([
-    {
-      id: "ans-1",
-      leaderId: "leader-1",
-      leaderName: "Sarah Chen",
-      questionNumber: 3,
-      question: "What are the three types of phishing attacks?",
-      submittedAnswer: "Spear phishing, whaling, and clone phishing",
-      status: "pending",
-      attemptNumber: 1,
-      submittedAt: "2:45 PM",
-    },
-    {
-      id: "ans-2",
-      leaderId: "leader-2",
-      leaderName: "Marcus Johnson",
-      questionNumber: 5,
-      question: "Describe a zero-day vulnerability",
-      submittedAnswer: "A zero-day is an unknown security vulnerability that has not been disclosed or patched",
-      status: "pending",
-      attemptNumber: 1,
-      submittedAt: "2:50 PM",
-    },
-    {
-      id: "ans-3",
-      leaderId: "leader-3",
-      leaderName: "Emma Wilson",
-      questionNumber: 2,
-      question: "What is social engineering?",
-      submittedAnswer: "Social engineering is manipulating people to divulge confidential information",
-      status: "pending",
-      attemptNumber: 2,
-      submittedAt: "2:55 PM",
-    },
-    {
-      id: "ans-4",
-      leaderId: "leader-1",
-      leaderName: "Sarah Chen",
-      questionNumber: 1,
-      question: "Define a malware attack",
-      submittedAnswer: "Malware is malicious software designed to harm or exploit computer systems",
-      status: "approved",
-      attemptNumber: 1,
-      submittedAt: "2:10 PM",
-    },
-  ])
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const answersData = await getAnswers()
+      const leadersData = await getLeaders()
+
+      // Map answers to include leader name and question data
+      const mappedAnswers = answersData.map((ans: any, idx: number) => ({
+        id: ans.id,
+        leaderId: ans.leader_id,
+        leaderName: `Leader ${idx + 1}`,
+        questionNumber: idx + 1,
+        question: ans.answer_text || "Question",
+        submittedAnswer: ans.answer_text,
+        status: ans.status,
+        attemptNumber: 1,
+        submittedAt: ans.created_at,
+      }))
+
+      const mappedLeaders = leadersData.map((leader: any, idx: number) => ({
+        id: leader.id,
+        name: leader.name,
+        totalAnswers: idx + 3,
+        approvedAnswers: idx + 2,
+        pendingReview: 1,
+      }))
+
+      setAnswers(mappedAnswers)
+      setLeaders(mappedLeaders)
+    } catch (err) {
+      setError("Failed to fetch data")
+      console.error("[v0] Fetch error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (answerId: string) => {
+    try {
+      await approveAnswer(answerId)
+      setAnswers(answers.map((a) => (a.id === answerId ? { ...a, status: "approved" } : a)))
+      setDrawerOpen(false)
+    } catch (err) {
+      console.error("[v0] Approve error:", err)
+    }
+  }
+
+  const handleReject = async (answerId: string) => {
+    try {
+      await rejectAnswer(answerId)
+      setAnswers(answers.map((a) => (a.id === answerId ? { ...a, status: "rejected" } : a)))
+      setDrawerOpen(false)
+    } catch (err) {
+      console.error("[v0] Reject error:", err)
+    }
+  }
 
   const sidebarItems = [
     {
@@ -110,18 +125,19 @@ export default function XConDashboard() {
     },
   ]
 
-  const handleApprove = (answerId: string) => {
-    setAnswers(answers.map((a) => (a.id === answerId ? { ...a, status: "approved" } : a)))
-    setDrawerOpen(false)
-  }
-
-  const handleReject = (answerId: string) => {
-    setAnswers(answers.map((a) => (a.id === answerId ? { ...a, status: "rejected" } : a)))
-    setDrawerOpen(false)
-  }
-
   const pendingAnswers = answers.filter((a) => a.status === "pending")
   const totalAnswersReviewed = answers.filter((a) => a.status !== "pending").length
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <DashboardSidebar items={sidebarItems} />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading review queue...</p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -136,6 +152,15 @@ export default function XConDashboard() {
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-8 space-y-8">
+            {/* Error Message */}
+            {error && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-destructive">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Key Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatChip
@@ -177,9 +202,6 @@ export default function XConDashboard() {
                               Q{answer.questionNumber}
                             </span>
                             <p className="text-sm font-semibold text-foreground">{answer.leaderName}</p>
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              Attempt {answer.attemptNumber}
-                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">{answer.question}</p>
                           <div className="bg-card p-3 rounded border border-border mb-3">
