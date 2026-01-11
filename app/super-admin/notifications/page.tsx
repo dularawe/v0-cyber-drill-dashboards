@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Send, AlertCircle, CheckCircle2, Bell, Trash2 } from "lucide-react"
+import { Send, AlertCircle, CheckCircle2, Trash2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { sendNotification, getNotifications, deleteNotification } from "@/lib/api-client"
@@ -38,7 +37,7 @@ export default function AdminNotificationsPage() {
     try {
       setLoading(true)
       const data = await getNotifications()
-      setNotifications(data || [])
+      setNotifications(data)
     } catch (error) {
       console.error("[v0] Error fetching notifications:", error)
       setAlert({ type: "error", message: "Failed to load notifications" })
@@ -49,28 +48,24 @@ export default function AdminNotificationsPage() {
 
   const handleSendNotification = async () => {
     if (!title.trim() || !message.trim()) {
-      setAlert({ type: "error", message: "Please fill in title and message" })
+      setAlert({ type: "error", message: "Please fill in all fields" })
       return
     }
 
     setIsSending(true)
     try {
-      await sendNotification({
+      const payload = {
         title,
         message,
         type: notificationType,
-        is_broadcast: recipientType === "broadcast",
-        recipient_type: recipientType !== "broadcast" ? recipientType : null,
-      })
+        recipient_type: recipientType,
+      }
 
+      await sendNotification(payload)
       setAlert({ type: "success", message: "Notification sent successfully!" })
       setTitle("")
       setMessage("")
-      setNotificationType("info")
-      setRecipientType("broadcast")
-
-      // Refresh notifications
-      setTimeout(() => fetchNotifications(), 500)
+      fetchNotifications()
     } catch (error) {
       console.error("[v0] Error sending notification:", error)
       setAlert({ type: "error", message: "Failed to send notification" })
@@ -90,200 +85,122 @@ export default function AdminNotificationsPage() {
     }
   }
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "success":
-        return "bg-green-100 border-l-4 border-green-500 text-green-700"
-      case "warning":
-        return "bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700"
-      case "error":
-        return "bg-red-100 border-l-4 border-red-500 text-red-700"
-      default:
-        return "bg-blue-100 border-l-4 border-blue-500 text-blue-700"
-    }
-  }
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return <CheckCircle2 className="h-5 w-5" />
-      case "error":
-        return <AlertCircle className="h-5 w-5" />
-      case "warning":
-        return <AlertCircle className="h-5 w-5" />
-      default:
-        return <Bell className="h-5 w-5" />
-    }
-  }
-
-  const sidebarItems = [
-    {
-      label: "Overview",
-      href: "/super-admin",
-      icon: <AlertCircle className="h-5 w-5" />,
-      active: false,
-    },
-    {
-      label: "Create Drill",
-      href: "/super-admin/create-drill",
-      icon: <AlertCircle className="h-5 w-5" />,
-      active: false,
-    },
-    {
-      label: "Questions",
-      href: "/super-admin/questions",
-      icon: <AlertCircle className="h-5 w-5" />,
-      active: false,
-    },
-    {
-      label: "Notifications",
-      href: "/super-admin/notifications",
-      icon: <Bell className="h-5 w-5" />,
-      active: true,
-    },
-  ]
-
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar items={sidebarItems} />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader title="Notifications & Messaging" status="Active" userRole="Super Admin" />
+    <main className="flex-1">
+      <DashboardHeader title="Notifications & Messaging" description="Active" />
 
+      <div className="p-6 space-y-6">
         {alert && (
           <div
-            className={`mx-4 mt-4 p-4 rounded-lg flex items-center gap-2 ${
-              alert.type === "success"
-                ? "bg-green-100 border-l-4 border-green-500 text-green-700"
-                : "bg-red-100 border-l-4 border-red-500 text-red-700"
+            className={`p-4 rounded-lg flex items-center gap-2 ${
+              alert.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
             }`}
           >
             {alert.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-            <span>{alert.message}</span>
+            {alert.message}
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-8 space-y-8">
-            {/* Send Notification Form */}
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle>Send Group Message</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Notification Title</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Drill Reminder"
-                    className="w-full px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Send Group Message</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Notification Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Drill Reminder"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-600 outline-none"
+              />
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Message Content</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    rows={4}
-                    className="w-full px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Message Content</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message here..."
+                rows={4}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-600 outline-none"
+              />
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Notification Type</label>
-                    <select
-                      value={notificationType}
-                      onChange={(e) => setNotificationType(e.target.value as "info" | "success" | "warning" | "error")}
-                      className="w-full px-4 py-2 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="info">Info</option>
-                      <option value="success">Success</option>
-                      <option value="warning">Warning</option>
-                      <option value="error">Error</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Send To</label>
-                    <select
-                      value={recipientType}
-                      onChange={(e) => setRecipientType(e.target.value as "broadcast" | "leaders" | "xcons")}
-                      className="w-full px-4 py-2 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="broadcast">All Users</option>
-                      <option value="leaders">Leaders Only</option>
-                      <option value="xcons">X-CONs Only</option>
-                    </select>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleSendNotification}
-                  disabled={isSending || !title.trim() || !message.trim()}
-                  className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Notification Type</label>
+                <select
+                  value={notificationType}
+                  onChange={(e) => setNotificationType(e.target.value as "info" | "success" | "warning" | "error")}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-600 outline-none"
                 >
-                  <Send className="h-4 w-4" />
-                  {isSending ? "Sending..." : "Send Message"}
-                </Button>
-              </CardContent>
-            </Card>
+                  <option value="info">Info</option>
+                  <option value="success">Success</option>
+                  <option value="warning">Warning</option>
+                  <option value="error">Error</option>
+                </select>
+              </div>
 
-            {/* Notifications History */}
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle>Message History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <p className="text-muted-foreground">Loading notifications...</p>
-                ) : notifications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
-                    <p className="text-muted-foreground">No notifications sent yet</p>
+              <div>
+                <label className="block text-sm font-medium mb-2">Send To</label>
+                <select
+                  value={recipientType}
+                  onChange={(e) => setRecipientType(e.target.value as "broadcast" | "leaders" | "xcons")}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-600 outline-none"
+                >
+                  <option value="broadcast">All Users</option>
+                  <option value="leaders">Leaders Only</option>
+                  <option value="xcons">X-CONs Only</option>
+                </select>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSendNotification}
+              disabled={isSending}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2"
+            >
+              <Send className="h-4 w-4" />
+              {isSending ? "Sending..." : "Send Message"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Message History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading messages...</div>
+            ) : notifications.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No messages sent yet</div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {notifications.map((notif) => (
+                  <div key={notif.id} className="p-4 bg-gray-50 rounded-lg flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium">{notif.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                      <p className="text-xs text-gray-500 mt-2">{new Date(notif.created_at).toLocaleString()}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteNotification(notif.id)}
+                      className="ml-4"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`p-4 rounded-lg flex items-start justify-between ${getTypeColor(notif.type)}`}
-                      >
-                        <div className="flex items-start gap-3 flex-1">
-                          <div className="mt-1">{getTypeIcon(notif.type)}</div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{notif.title}</h3>
-                            <p className="text-sm mt-1">{notif.message}</p>
-                            <div className="flex gap-2 mt-2 text-xs">
-                              <span className="px-2 py-1 rounded bg-black/10">
-                                {notif.is_broadcast ? "Broadcast" : "Targeted"}
-                              </span>
-                              <span className="px-2 py-1 rounded bg-black/10">
-                                {new Date(notif.created_at).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => handleDeleteNotification(notif.id)}
-                          variant="ghost"
-                          size="sm"
-                          className="ml-4"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
-    </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   )
 }
