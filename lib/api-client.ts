@@ -91,15 +91,10 @@ export async function getQuestions() {
 
 export async function createQuestion(question: any) {
   try {
-    const formData = new FormData()
-    for (const key in question) {
-      if (question.hasOwnProperty(key)) {
-        formData.append(key, question[key])
-      }
-    }
     const response = await fetchWithAuth(`${API_BASE}/questions`, {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(question),
     })
     if (!response.ok) throw new Error("Failed to create question")
     return response.json()
@@ -111,15 +106,10 @@ export async function createQuestion(question: any) {
 
 export async function updateQuestion(id: string, updates: any) {
   try {
-    const formData = new FormData()
-    for (const key in updates) {
-      if (updates.hasOwnProperty(key)) {
-        formData.append(key, updates[key])
-      }
-    }
     const response = await fetchWithAuth(`${API_BASE}/questions/${id}`, {
       method: "PATCH",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
     })
     if (!response.ok) throw new Error("Failed to update question")
     return response.json()

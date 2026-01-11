@@ -64,6 +64,31 @@ export default function DrillManagementPage() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    const checkAutoStart = async () => {
+      const now = new Date().getTime()
+
+      for (const drill of drills) {
+        if (drill.status === "scheduled" || drill.status === "draft") {
+          const startTime = new Date(drill.start_time).getTime()
+          // Auto-start if current time >= scheduled start time
+          if (now >= startTime && drill.status === "scheduled") {
+            try {
+              await updateDrillSession(String(drill.id), { status: "live" })
+              setDrills(drills.map((d) => (d.id === drill.id ? { ...d, status: "live" } : d)))
+              setAlert({ type: "success", message: `Drill "${drill.name}" auto-started!` })
+            } catch (error) {
+              console.error("[v0] Auto-start error:", error)
+            }
+          }
+        }
+      }
+    }
+
+    const autoStartInterval = setInterval(checkAutoStart, 10000) // Check every 10 seconds
+    return () => clearInterval(autoStartInterval)
+  }, [drills])
+
   const handleEditDrill = (drill: Drill) => {
     setEditingDrillId(drill.id)
     setFormData({
@@ -406,6 +431,14 @@ export default function DrillManagementPage() {
                                 </>
                               ) : drill.status === "live" ? (
                                 <>
+                                  <Button
+                                    onClick={() => handlePauseDrill(drill.id)}
+                                    size="sm"
+                                    className="gap-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                                  >
+                                    <StopCircle className="h-4 w-4" />
+                                    Pause
+                                  </Button>
                                   <Button
                                     onClick={() => handleStopDrill(drill.id)}
                                     size="sm"

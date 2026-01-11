@@ -6,14 +6,14 @@ const router = Router()
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const questions: any[] = await query("SELECT * FROM questions ORDER BY created_at DESC")
+    const questions: any[] = (await query("SELECT * FROM questions ORDER BY created_at DESC")) as any[]
 
     const questionsWithImages = await Promise.all(
       questions.map(async (q: any) => {
-        const images: any[] = await query(
+        const images: any[] = (await query(
           "SELECT id, image_data, image_type, display_order FROM question_images WHERE question_id = ? ORDER BY display_order",
           [q.id],
-        )
+        )) as any[]
         return { ...q, images }
       }),
     )
@@ -51,15 +51,15 @@ router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) 
 
 router.get("/:id", async (req: Request, res: Response) => {
   try {
-    const questions: any[] = await query("SELECT * FROM questions WHERE id = ?", [req.params.id])
+    const questions: any[] = (await query("SELECT * FROM questions WHERE id = ?", [req.params.id])) as any[]
     if (questions.length === 0) {
       return res.status(404).json({ error: "Question not found" })
     }
 
-    const images: any[] = await query(
+    const images: any[] = (await query(
       "SELECT id, image_data, image_type, display_order FROM question_images WHERE question_id = ? ORDER BY display_order",
       [req.params.id],
-    )
+    )) as any[]
 
     res.json({ ...questions[0], images })
   } catch (error) {
