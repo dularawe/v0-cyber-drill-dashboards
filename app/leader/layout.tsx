@@ -26,7 +26,8 @@ export default function LeaderLayout({ children }: { children: React.ReactNode }
 
       if (activeDrill) {
         setIsAllowed(true)
-      } else {
+      } else if (isAllowed) {
+        // Only redirect if we previously allowed access, meaning drill status changed
         setIsAllowed(false)
         router.push("/landing")
       }

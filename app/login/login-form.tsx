@@ -23,9 +23,10 @@ export default function LoginForm() {
   const role = (searchParams.get("role") || "super-admin") as UserRole
 
   useEffect(() => {
-    if (!searchParams.has("role")) {
+    if (searchParams && !searchParams.has("role")) {
       router.push("/")
     }
+
     const user = sessionStorage.getItem("currentUser")
     if (user) {
       try {
@@ -35,7 +36,10 @@ export default function LoginForm() {
           xcon: "/xcon",
           leader: "/leader",
         }
-        router.push(routes[userData.role as UserRole])
+        const route = routes[userData.role as UserRole]
+        if (route) {
+          router.push(route)
+        }
       } catch (e) {
         sessionStorage.removeItem("currentUser")
       }
