@@ -21,7 +21,7 @@ export default function XConLayout({ children }: { children: React.ReactNode }) 
   const checkDrillStatus = async () => {
     try {
       const sessions = await getDrillSessions()
-      const activeDrill = sessions.find((s: any) => s.status === "live")
+      const activeDrill = sessions.find((s: any) => s.status === "live" || s.status === "running")
 
       if (activeDrill) {
         setIsAllowed(true)

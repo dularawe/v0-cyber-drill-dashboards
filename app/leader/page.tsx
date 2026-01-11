@@ -180,7 +180,7 @@ export default function LeaderDashboard() {
   }
 
   return (
-    <>
+    <main className="flex-1 flex flex-col overflow-hidden">
       <DashboardHeader
         title={currentSession?.name || "Cyber Drill Exercise"}
         status={sessionActive ? "In Progress" : "Waiting"}
@@ -271,6 +271,6 @@ export default function LeaderDashboard() {
           )}
         </div>
       </div>
-    </>
+    </main>
   )
 }

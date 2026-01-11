@@ -55,10 +55,9 @@ router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) 
 
 router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { status } = req.body
-    const { start_time, end_time } = req.body
+    const { status, start_time, end_time } = req.body
 
-    if (status && !["draft", "scheduled", "live", "completed"].includes(status)) {
+    if (status && !["draft", "scheduled", "live", "running", "paused", "completed"].includes(status)) {
       return res.status(400).json({ error: "Invalid status value" })
     }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Play, StopCircle, Trash2, Plus, X, AlertCircle, CheckCircle2, Edit2, Pause } from "lucide-react"
+import { Play, Trash2, Plus, X, AlertCircle, CheckCircle2, Edit2, Pause, Square } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ import {
 interface Drill {
   id: number
   name: string
-  status: "draft" | "scheduled" | "live" | "completed"
+  status: "draft" | "scheduled" | "live" | "running" | "paused" | "completed"
   start_time: string
   end_time: string
   created_at: string
@@ -176,24 +176,12 @@ export default function DrillManagementPage() {
   const handlePauseDrill = async (drillId: number) => {
     try {
       console.log("[v0] Pausing drill:", drillId)
-      await updateDrillSession(String(drillId), { status: "scheduled" })
+      await updateDrillSession(String(drillId), { status: "paused" })
       setAlert({ type: "success", message: "Drill paused successfully!" })
-      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "scheduled" } : d)))
+      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "paused" } : d)))
     } catch (error) {
       console.error("[v0] Error pausing drill:", error)
       setAlert({ type: "error", message: "Failed to pause drill" })
-    }
-  }
-
-  const handleStopDrill = async (drillId: number) => {
-    try {
-      console.log("[v0] Stopping drill:", drillId)
-      await updateDrillSession(String(drillId), { status: "scheduled" })
-      setAlert({ type: "success", message: "Drill stopped successfully!" })
-      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "scheduled" } : d)))
-    } catch (error) {
-      console.error("[v0] Error stopping drill:", error)
-      setAlert({ type: "error", message: "Failed to stop drill" })
     }
   }
 
@@ -231,6 +219,10 @@ export default function DrillManagementPage() {
         return "bg-blue-100 text-blue-800"
       case "live":
         return "bg-green-100 text-green-800"
+      case "running":
+        return "bg-yellow-100 text-yellow-800"
+      case "paused":
+        return "bg-orange-100 text-orange-800"
       case "completed":
         return "bg-neutral-100 text-neutral-800"
       default:
@@ -456,30 +448,22 @@ export default function DrillManagementPage() {
                                     Start
                                   </Button>
                                 </>
-                              ) : drill.status === "live" ? (
+                              ) : drill.status === "live" || drill.status === "running" ? (
                                 <>
                                   <Button
                                     onClick={() => handlePauseDrill(drill.id)}
                                     size="sm"
-                                    className="gap-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    className="gap-1 bg-yellow-500 hover:bg-yellow-600 text-white"
                                   >
                                     <Pause className="h-4 w-4" />
                                     Pause
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleStopDrill(drill.id)}
-                                    size="sm"
-                                    className="gap-1 bg-orange-600 hover:bg-orange-700 text-white"
-                                  >
-                                    <StopCircle className="h-4 w-4" />
-                                    Stop
                                   </Button>
                                   <Button
                                     onClick={() => handleEndDrill(drill.id)}
                                     size="sm"
                                     className="gap-1 bg-red-600 hover:bg-red-700 text-white"
                                   >
-                                    <StopCircle className="h-4 w-4" />
+                                    <Square className="h-4 w-4" />
                                     End
                                   </Button>
                                 </>
