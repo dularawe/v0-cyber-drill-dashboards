@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Play, StopCircle, Trash2, Plus, X, AlertCircle, CheckCircle2, Edit2 } from "lucide-react"
+import { Play, StopCircle, Trash2, Plus, X, AlertCircle, CheckCircle2, Edit2, Pause } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,10 +31,10 @@ interface Question {
 }
 
 export default function DrillManagementPage() {
-  const router = useRouter()
   const [drills, setDrills] = useState<Drill[]>([])
   const [allQuestions, setAllQuestions] = useState<Question[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingDrillId, setEditingDrillId] = useState<number | null>(null)
@@ -46,20 +45,29 @@ export default function DrillManagementPage() {
     selectedQuestions: [] as number[],
   })
 
+  const fetchData = async () => {
+    try {
+      setFetchError(null)
+      console.log("[v0] Fetching drill data...")
+      const [drillsData, questionsData] = await Promise.all([getDrillSessions(), getQuestions()])
+      console.log("[v0] Drills data received:", drillsData)
+      console.log("[v0] Questions data received:", questionsData)
+      setDrills(drillsData || [])
+      setAllQuestions(questionsData || [])
+    } catch (error) {
+      console.error("[v0] Error fetching data:", error)
+      const errorMsg = error instanceof Error ? error.message : "Failed to load drills"
+      setFetchError(errorMsg)
+      setAlert({ type: "error", message: errorMsg })
+      setDrills([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Fetch drills and questions
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [drillsData, questionsData] = await Promise.all([getDrillSessions(), getQuestions()])
-        setDrills(drillsData)
-        setAllQuestions(questionsData)
-      } catch (error) {
-        console.error("[v0] Error fetching data:", error)
-        setAlert({ type: "error", message: "Failed to load drills" })
-      }
-    }
     fetchData()
-
     const interval = setInterval(fetchData, 4000)
     return () => clearInterval(interval)
   }, [])
@@ -85,7 +93,7 @@ export default function DrillManagementPage() {
       }
     }
 
-    const autoStartInterval = setInterval(checkAutoStart, 10000) // Check every 10 seconds
+    const autoStartInterval = setInterval(checkAutoStart, 10000)
     return () => clearInterval(autoStartInterval)
   }, [drills])
 
@@ -144,8 +152,7 @@ export default function DrillManagementPage() {
       setShowCreateForm(false)
 
       // Refresh drills list
-      const updatedDrills = await getDrillSessions()
-      setDrills(updatedDrills)
+      await fetchData()
     } catch (error) {
       console.error("[v0] Error saving drill:", error)
       setAlert({ type: "error", message: "Failed to save drill" })
@@ -156,6 +163,7 @@ export default function DrillManagementPage() {
 
   const handleStartDrill = async (drillId: number) => {
     try {
+      console.log("[v0] Starting drill:", drillId)
       await updateDrillSession(String(drillId), { status: "live" })
       setAlert({ type: "success", message: "Drill started successfully!" })
       setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "live" } : d)))
@@ -167,6 +175,7 @@ export default function DrillManagementPage() {
 
   const handlePauseDrill = async (drillId: number) => {
     try {
+      console.log("[v0] Pausing drill:", drillId)
       await updateDrillSession(String(drillId), { status: "scheduled" })
       setAlert({ type: "success", message: "Drill paused successfully!" })
       setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "scheduled" } : d)))
@@ -178,6 +187,7 @@ export default function DrillManagementPage() {
 
   const handleStopDrill = async (drillId: number) => {
     try {
+      console.log("[v0] Stopping drill:", drillId)
       await updateDrillSession(String(drillId), { status: "scheduled" })
       setAlert({ type: "success", message: "Drill stopped successfully!" })
       setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "scheduled" } : d)))
@@ -189,6 +199,7 @@ export default function DrillManagementPage() {
 
   const handleEndDrill = async (drillId: number) => {
     try {
+      console.log("[v0] Ending drill:", drillId)
       await updateDrillSession(String(drillId), { status: "completed" })
       setAlert({ type: "success", message: "Drill ended successfully!" })
       setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "completed" } : d)))
@@ -202,6 +213,7 @@ export default function DrillManagementPage() {
     if (!confirm("Are you sure you want to delete this drill?")) return
 
     try {
+      console.log("[v0] Deleting drill:", drillId)
       await deleteDrillSession(String(drillId))
       setAlert({ type: "success", message: "Drill deleted successfully!" })
       setDrills(drills.filter((d) => d.id !== drillId))
@@ -229,6 +241,13 @@ export default function DrillManagementPage() {
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
       <DashboardHeader title="Drill Management" status="Active" userRole="Super Admin" />
+
+      {fetchError && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5" />
+          <span>Error loading drills: {fetchError}</span>
+        </div>
+      )}
 
       {alert && (
         <div
@@ -305,37 +324,43 @@ export default function DrillManagementPage() {
                       Select Questions ({formData.selectedQuestions.length} selected)
                     </label>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {allQuestions.map((question) => (
-                        <label
-                          key={question.id}
-                          className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedQuestions.includes(question.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  selectedQuestions: [...formData.selectedQuestions, question.id],
-                                })
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  selectedQuestions: formData.selectedQuestions.filter((id) => id !== question.id),
-                                })
-                              }
-                            }}
-                            className="w-4 h-4"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{question.text}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {question.category} • {question.difficulty}
-                            </p>
-                          </div>
-                        </label>
-                      ))}
+                      {allQuestions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">
+                          No questions available. Create questions first.
+                        </p>
+                      ) : (
+                        allQuestions.map((question) => (
+                          <label
+                            key={question.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedQuestions.includes(question.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    selectedQuestions: [...formData.selectedQuestions, question.id],
+                                  })
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    selectedQuestions: formData.selectedQuestions.filter((id) => id !== question.id),
+                                  })
+                                }
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-foreground">{question.text}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {question.category} • {question.difficulty}
+                              </p>
+                            </div>
+                          </label>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -371,7 +396,9 @@ export default function DrillManagementPage() {
               <CardTitle>All Drills ({drills.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {drills.length === 0 ? (
+              {loading ? (
+                <p className="text-center py-8 text-muted-foreground">Loading drills...</p>
+              ) : drills.length === 0 ? (
                 <p className="text-center py-8 text-muted-foreground">
                   No drills created yet. Create one to get started.
                 </p>
@@ -436,7 +463,7 @@ export default function DrillManagementPage() {
                                     size="sm"
                                     className="gap-1 bg-yellow-600 hover:bg-yellow-700 text-white"
                                   >
-                                    <StopCircle className="h-4 w-4" />
+                                    <Pause className="h-4 w-4" />
                                     Pause
                                   </Button>
                                   <Button
