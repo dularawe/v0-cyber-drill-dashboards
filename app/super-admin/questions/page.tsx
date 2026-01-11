@@ -3,11 +3,18 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit2, Trash2, X } from "lucide-react"
+import { Plus, Edit2, Trash2, X, Upload, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from "@/lib/api-client"
+
+interface QuestionImage {
+  id?: string
+  data: string
+  type: string
+  preview?: string
+}
 
 interface Question {
   id: string
@@ -15,6 +22,7 @@ interface Question {
   category: string
   difficulty: "easy" | "medium" | "hard"
   timeLimit: number
+  images?: QuestionImage[]
 }
 
 export default function QuestionsPage() {
@@ -28,6 +36,7 @@ export default function QuestionsPage() {
     category: "Security Awareness",
     difficulty: "easy" as const,
     timeLimit: 180,
+    images: [] as QuestionImage[],
   })
 
   useEffect(() => {
@@ -44,6 +53,36 @@ export default function QuestionsPage() {
     fetchQuestions()
   }, [])
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newImages = [...formData.images]
+    if (newImages.length + files.length > 5) {
+      alert("Maximum 5 images per question allowed")
+      return
+    }
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string
+        newImages.push({
+          data: base64,
+          type: file.type,
+          preview: base64,
+        })
+        setFormData({ ...formData, images: newImages })
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleRemoveImage = (index: number) => {
+    const updatedImages = formData.images.filter((_, i) => i !== index)
+    setFormData({ ...formData, images: updatedImages })
+  }
+
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -54,6 +93,7 @@ export default function QuestionsPage() {
         category: "Security Awareness",
         difficulty: "easy",
         timeLimit: 180,
+        images: [],
       })
       setShowAddModal(false)
     } catch (err) {
@@ -91,6 +131,7 @@ export default function QuestionsPage() {
       category: question.category,
       difficulty: question.difficulty,
       timeLimit: question.timeLimit,
+      images: question.images?.map((img) => ({ ...img, preview: img.data })) || [],
     })
     setShowEditModal(true)
   }
@@ -185,7 +226,22 @@ export default function QuestionsPage() {
                         <p className="text-muted-foreground">
                           <strong>Time Limit:</strong> {question.timeLimit} seconds
                         </p>
+                        <p className="text-muted-foreground">
+                          <strong>Images:</strong> {question.images?.length || 0}/5
+                        </p>
                       </div>
+                      {question.images && question.images.length > 0 && (
+                        <div className="mt-4 grid grid-cols-5 gap-2">
+                          {question.images.map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img.data || "/placeholder.svg"}
+                              alt={`Question image ${idx + 1}`}
+                              className="h-16 w-16 object-cover rounded border border-border"
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 ml-4">
                       <Button
@@ -268,19 +324,59 @@ export default function QuestionsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Time Limit (seconds)</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Time Limit (seconds)</label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="600"
+                    value={formData.timeLimit}
+                    onChange={(e) => setFormData({ ...formData, timeLimit: Number.parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Question Images (Max 5)</label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
-                      type="number"
-                      min="30"
-                      max="600"
-                      value={formData.timeLimit}
-                      onChange={(e) => setFormData({ ...formData, timeLimit: Number.parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={formData.images.length >= 5}
+                      className="hidden"
+                      id="image-upload"
                     />
+                    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Click to upload images ({formData.images.length}/5)
+                      </span>
+                    </label>
                   </div>
+
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-5 gap-2">
+                      {formData.images.map((img, idx) => (
+                        <div key={idx} className="relative">
+                          <img
+                            src={img.preview || "/placeholder.svg"}
+                            alt={`Preview ${idx + 1}`}
+                            className="h-20 w-20 object-cover rounded border border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="absolute top-0 right-0 bg-destructive text-white rounded-full p-1 translate-x-1/3 -translate-y-1/3"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -357,19 +453,59 @@ export default function QuestionsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Time Limit (seconds)</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Time Limit (seconds)</label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="600"
+                    value={formData.timeLimit}
+                    onChange={(e) => setFormData({ ...formData, timeLimit: Number.parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Question Images (Max 5)</label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
-                      type="number"
-                      min="30"
-                      max="600"
-                      value={formData.timeLimit}
-                      onChange={(e) => setFormData({ ...formData, timeLimit: Number.parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={formData.images.length >= 5}
+                      className="hidden"
+                      id="image-upload-edit"
                     />
+                    <label htmlFor="image-upload-edit" className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Click to upload images ({formData.images.length}/5)
+                      </span>
+                    </label>
                   </div>
+
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-5 gap-2">
+                      {formData.images.map((img, idx) => (
+                        <div key={idx} className="relative">
+                          <img
+                            src={img.preview || "/placeholder.svg"}
+                            alt={`Preview ${idx + 1}`}
+                            className="h-20 w-20 object-cover rounded border border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="absolute top-0 right-0 bg-destructive text-white rounded-full p-1 translate-x-1/3 -translate-y-1/3"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">

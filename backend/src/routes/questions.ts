@@ -7,7 +7,18 @@ const router = Router()
 router.get("/", async (req: Request, res: Response) => {
   try {
     const questions = await query("SELECT * FROM questions ORDER BY created_at DESC")
-    res.json(questions)
+
+    const questionsWithImages = await Promise.all(
+      questions.map(async (q: any) => {
+        const images = await query(
+          "SELECT id, image_data, image_type, display_order FROM question_images WHERE question_id = ? ORDER BY display_order",
+          [q.id],
+        )
+        return { ...q, images }
+      }),
+    )
+
+    res.json(questionsWithImages)
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch questions" })
   }
@@ -15,13 +26,23 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { text, category, difficulty, timeLimit } = req.body
+    const { text, category, difficulty, timeLimit, images } = req.body
     const result: any = await query(
       "INSERT INTO questions (text, category, difficulty, time_limit) VALUES (?, ?, ?, ?)",
       [text, category, difficulty, timeLimit],
     )
 
-    res.json({ id: result.insertId, text, category, difficulty, timeLimit })
+    if (images && Array.isArray(images) && images.length > 0) {
+      for (let i = 0; i < Math.min(images.length, 5); i++) {
+        const img = images[i]
+        await query(
+          "INSERT INTO question_images (question_id, image_data, image_type, display_order) VALUES (?, ?, ?, ?)",
+          [result.insertId, img.data, img.type || "image/jpeg", i],
+        )
+      }
+    }
+
+    res.json({ id: result.insertId, text, category, difficulty, timeLimit, images: images || [] })
   } catch (error) {
     console.log("[v0] Create question error:", error)
     res.status(500).json({ error: "Failed to create question" })
@@ -34,7 +55,13 @@ router.get("/:id", async (req: Request, res: Response) => {
     if (questions.length === 0) {
       return res.status(404).json({ error: "Question not found" })
     }
-    res.json(questions[0])
+
+    const images = await query(
+      "SELECT id, image_data, image_type, display_order FROM question_images WHERE question_id = ? ORDER BY display_order",
+      [req.params.id],
+    )
+
+    res.json({ ...questions[0], images })
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch question" })
   }
@@ -42,7 +69,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { text, category, difficulty, time_limit } = req.body
+    const { text, category, difficulty, time_limit, images } = req.body
     await query("UPDATE questions SET text = ?, category = ?, difficulty = ?, time_limit = ? WHERE id = ?", [
       text,
       category,
@@ -50,7 +77,24 @@ router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Respon
       time_limit,
       req.params.id,
     ])
-    res.json({ id: req.params.id, text, category, difficulty, time_limit })
+
+    if (images !== undefined) {
+      await query("DELETE FROM question_images WHERE question_id = ?", [req.params.id])
+
+      if (Array.isArray(images) && images.length > 0) {
+        for (let i = 0; i < Math.min(images.length, 5); i++) {
+          const img = images[i]
+          if (img.data) {
+            await query(
+              "INSERT INTO question_images (question_id, image_data, image_type, display_order) VALUES (?, ?, ?, ?)",
+              [req.params.id, img.data, img.type || "image/jpeg", i],
+            )
+          }
+        }
+      }
+    }
+
+    res.json({ id: req.params.id, text, category, difficulty, time_limit, images: images || [] })
   } catch (error) {
     res.status(500).json({ error: "Failed to update question" })
   }
