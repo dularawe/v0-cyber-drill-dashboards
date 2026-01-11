@@ -211,6 +211,18 @@ export default function DrillManagementPage() {
     }
   }
 
+  const handleResumedrill = async (drillId: number) => {
+    try {
+      console.log("[v0] Resuming drill:", drillId)
+      await updateDrillSession(String(drillId), { status: "live" })
+      setAlert({ type: "success", message: "Drill resumed successfully!" })
+      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "live" } : d)))
+    } catch (error) {
+      console.error("[v0] Error resuming drill:", error)
+      setAlert({ type: "error", message: "Failed to resume drill" })
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "draft":
@@ -457,6 +469,25 @@ export default function DrillManagementPage() {
                                   >
                                     <Pause className="h-4 w-4" />
                                     Pause
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleEndDrill(drill.id)}
+                                    size="sm"
+                                    className="gap-1 bg-red-600 hover:bg-red-700 text-white"
+                                  >
+                                    <Square className="h-4 w-4" />
+                                    End
+                                  </Button>
+                                </>
+                              ) : drill.status === "paused" ? (
+                                <>
+                                  <Button
+                                    onClick={() => handleResumedrill(drill.id)}
+                                    size="sm"
+                                    className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    <Play className="h-4 w-4" />
+                                    Resume
                                   </Button>
                                   <Button
                                     onClick={() => handleEndDrill(drill.id)}

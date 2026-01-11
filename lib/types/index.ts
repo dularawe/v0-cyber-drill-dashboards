@@ -41,7 +41,7 @@ export interface DrillSession {
   id: string
   name: string
   description?: string
-  status: "draft" | "active" | "paused" | "completed"
+  status: "draft" | "running" | "paused" | "completed"
   created_by: string
   started_at?: string
   ended_at?: string

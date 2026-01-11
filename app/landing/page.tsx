@@ -32,7 +32,7 @@ export default function LandingPage() {
     try {
       const sessions = await getDrillSessions()
 
-      const liveDrill = sessions.find((s: any) => s.status === "live")
+      const liveDrill = sessions.find((s: any) => s.status === "running")
       if (liveDrill) {
         setDrillStarted(true)
         const userRole = sessionStorage.getItem("userRole") || "leader"
@@ -41,7 +41,7 @@ export default function LandingPage() {
         return
       }
 
-      const upcoming = sessions.find((s: any) => s.status === "scheduled" || s.status === "draft")
+      const upcoming = sessions.find((s: any) => s.status === "draft")
       if (upcoming) {
         setCurrentSession(upcoming)
         calculateCountdown(upcoming.start_time)
