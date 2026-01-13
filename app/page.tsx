@@ -12,10 +12,15 @@ export default function Home() {
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <Shield className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Cyber Drill</h1>
+          
+        <img
+          src="https://www.cert.gov.lk/wp-content/uploads/2024/11/logo-b-1.png"
+          alt="Government Logo"
+          className="h-10 w-90 object-contain"
+        />
+        
+     
+
           </div>
           <p className="text-sm text-muted-foreground">Enterprise Security Exercise Platform</p>
         </div>
@@ -24,7 +29,7 @@ export default function Home() {
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-foreground mb-4">Security Drill Management System</h2>
+          <h2 className="text-4xl font-bold text-foreground mb-4">Sri Lanka Computer Emergency Readiness Team</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Coordinated cybersecurity exercises with real-time monitoring, answer review workflows, and comprehensive
             leaderboards for enterprise teams
@@ -67,7 +72,7 @@ export default function Home() {
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
                 <Users className="h-6 w-6 text-primary" />
-                <CardTitle>Review Center</CardTitle>
+                <CardTitle>X-CON </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -96,7 +101,7 @@ export default function Home() {
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
                 <Shield className="h-6 w-6 text-primary" />
-                <CardTitle>Drill Interface</CardTitle>
+                <CardTitle>Participants</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
