@@ -211,12 +211,12 @@ export default function DrillManagementPage() {
     }
   }
 
-  const handleResumedrill = async (drillId: number) => {
+  const handleResumeDrill = async (drillId: number) => {
     try {
-      console.log("[v0] Resuming drill:", drillId)
-      await updateDrillSession(String(drillId), { status: "live" })
-      setAlert({ type: "success", message: "Drill resumed successfully!" })
-      setDrills(drills.map((d) => (d.id === drillId ? { ...d, status: "live" } : d)))
+      setAlert(null)
+      await updateDrillSession(drillId, { status: "running" })
+      setAlert({ type: "success", message: "Drill resumed successfully" })
+      fetchData()
     } catch (error) {
       console.error("[v0] Error resuming drill:", error)
       setAlert({ type: "error", message: "Failed to resume drill" })
@@ -482,7 +482,7 @@ export default function DrillManagementPage() {
                               ) : drill.status === "paused" ? (
                                 <>
                                   <Button
-                                    onClick={() => handleResumedrill(drill.id)}
+                                    onClick={() => handleResumeDrill(drill.id)}
                                     size="sm"
                                     className="gap-1 bg-green-600 hover:bg-green-700 text-white"
                                   >
