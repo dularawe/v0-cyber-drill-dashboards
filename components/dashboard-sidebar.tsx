@@ -18,9 +18,11 @@ export function DashboardSidebar({ items }: DashboardSidebarProps) {
   return (
     <aside className="w-64 border-r border-border bg-sidebar min-h-screen flex flex-col">
       <div className="flex items-center gap-2 px-6 py-6 border-b border-sidebar-border">
-        <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-          <span className="text-sidebar-primary-foreground font-bold">CD</span>
-        </div>
+        <img
+          src="https://www.cert.gov.lk/wp-content/uploads/2024/11/logo-b-1.png"
+          alt="Government Logo"
+          className="h-10 w-16 object-contain"
+        />
         <h1 className="text-lg font-semibold text-sidebar-foreground">Cyber Drill</h1>
       </div>
 

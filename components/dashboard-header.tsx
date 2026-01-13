@@ -1,7 +1,7 @@
 "use client"
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut, Settings, User } from "lucide-react"
+import { LogOut, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface DashboardHeaderProps {
@@ -22,9 +22,11 @@ export function DashboardHeader({ title, status, userRole }: DashboardHeaderProp
     <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">CD</span>
-          </div>
+          <img
+            src="https://www.cert.gov.lk/wp-content/uploads/2024/11/logo-b-1.png"
+            alt="Government Logo"
+            className="h-8 w-8 object-contain"
+          />
           <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
           {status && (
             <span className="ml-4 px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
@@ -38,7 +40,7 @@ export function DashboardHeader({ title, status, userRole }: DashboardHeaderProp
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 transition">
-                <User className="h-5 w-5" />
+                <Settings className="h-5 w-5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
