@@ -289,6 +289,17 @@ export async function deleteDrillSession(id: string) {
   }
 }
 
+export async function getSessionQuestions(sessionId: string) {
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/sessions/${sessionId}/questions`)
+    if (!response.ok) throw new Error("Failed to fetch session questions")
+    return response.json()
+  } catch (error) {
+    console.error("[v0] Get session questions error:", error)
+    throw error
+  }
+}
+
 // Answers
 export async function getAnswers() {
   try {

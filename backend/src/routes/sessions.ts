@@ -103,4 +103,34 @@ router.delete("/:id", authMiddleware, adminOnly, async (req: Request, res: Respo
   }
 })
 
+// Get questions for a specific session
+router.get("/:id/questions", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const questions: any[] = (await query(
+      `SELECT q.id, q.text, q.category, q.difficulty, q.time_limit, q.hint, sq.order_num
+       FROM questions q
+       INNER JOIN session_questions sq ON q.id = sq.question_id
+       WHERE sq.session_id = ?
+       ORDER BY sq.order_num ASC`,
+      [req.params.id]
+    )) as any[]
+
+    // Get images for each question
+    const questionsWithImages = await Promise.all(
+      questions.map(async (q: any) => {
+        const images: any[] = (await query(
+          "SELECT id, image_data, image_type, display_order FROM question_images WHERE question_id = ? ORDER BY display_order",
+          [q.id],
+        )) as any[]
+        return { ...q, images }
+      }),
+    )
+
+    res.json(questionsWithImages)
+  } catch (error) {
+    console.error("[v0] Error fetching session questions:", error)
+    res.status(500).json({ error: "Failed to fetch session questions" })
+  }
+})
+
 export default router

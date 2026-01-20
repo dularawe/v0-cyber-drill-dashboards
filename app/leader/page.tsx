@@ -8,7 +8,8 @@ import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { submitAnswer, getDrillSessions, getNotifications, getQuestions } from "@/lib/api-client"
+import { submitAnswer, getDrillSessions, getNotifications, getSessionQuestions } from "@/lib/api-client"
+import { getQuestions } from "@/lib/api-client" // Import getQuestions
 
 interface Question {
   id: string
@@ -64,7 +65,9 @@ export default function LeaderDashboard() {
     const user = sessionStorage.getItem("currentUser")
     if (!user) {
       router.push("/login")
+      return
     }
+    // Fetch session on mount - questions will be fetched when session is found
     fetchActiveSession()
   }, [router])
 
@@ -112,8 +115,8 @@ export default function LeaderDashboard() {
         setCurrentSession(active)
         setSessionActive(true)
         calculateTimeRemaining(active.end_time)
-        // Fetch questions when session is found
-        fetchQuestions()
+        // Fetch questions for this specific session
+        fetchQuestions(active.id.toString())
       } else {
         console.log("[v0] No active session found")
         setSessionActive(false)
@@ -123,15 +126,20 @@ export default function LeaderDashboard() {
     }
   }
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = async (sessionId?: string) => {
     try {
-      console.log("[v0] Fetching questions...")
-      const questionsData = await getQuestions()
+      if (!sessionId && !currentSession?.id) {
+        console.log("[v0] No session ID available, skipping questions fetch")
+        return
+      }
+      const id = sessionId || currentSession?.id?.toString()
+      console.log("[v0] Fetching questions for session:", id)
+      const questionsData = await getSessionQuestions(id!)
       console.log("[v0] Questions data received:", questionsData)
       if (questionsData && questionsData.length > 0) {
         const mappedQuestions = questionsData.map((q: any, idx: number) => ({
           id: q.id.toString(),
-          number: idx + 1,
+          number: q.order_num || idx + 1,
           content: q.text,
           status: "pending" as const,
           timeLimit: q.time_limit || 300,
@@ -144,7 +152,7 @@ export default function LeaderDashboard() {
           setQuestionTimeRemaining(mappedQuestions[currentQuestionIndex].timeLimit)
         }
       } else {
-        console.log("[v0] No questions found or empty array")
+        console.log("[v0] No questions found for this session")
       }
     } catch (error) {
       console.error("[v0] Error fetching questions:", error)
@@ -320,7 +328,11 @@ export default function LeaderDashboard() {
             )}
 
             <CardContent className="flex-1 overflow-y-auto p-4">
-              <p className="text-base text-foreground">{currentQuestion.content}</p>
+              {currentQuestion.content ? (
+                <p className="text-base text-foreground">{currentQuestion.content}</p>
+              ) : (
+                <p className="text-base text-muted-foreground italic">No question content available. Please check if questions have been added to the drill.</p>
+              )}
             </CardContent>
           </Card>
 
