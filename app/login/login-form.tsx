@@ -92,14 +92,13 @@ export default function LoginForm() {
     <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
-          <div className="flex justify-center mb-8">
-  <img
-    src="https://www.cert.gov.lk/wp-content/uploads/2024/11/logo-b-1.png"
-    alt="Government Logo"
-    className=" w-50 object-contain"
-  />
-</div>
-
+        <div className="text-center mb-8">
+          <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center mx-auto mb-4">
+            <span className="text-primary-foreground font-bold text-lg">CD</span>
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Cyber Drill</h1>
+          <p className="text-muted-foreground">Enterprise Security Exercise Platform</p>
+        </div>
 
         {/* Login Card */}
         <Card className="border-border bg-card">
@@ -158,7 +157,13 @@ export default function LoginForm() {
             </form>
 
             {/* Demo Info */}
-          
+            <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 space-y-2">
+              <p className="font-semibold">Admin Demo Login:</p>
+              <div className="space-y-1">
+                <p>Email: admin@cyberdrill.com</p>
+                <p>Password: Admin@2024</p>
+              </div>
+            </div>
 
             {/* Back to Home */}
             <div className="mt-4 text-center">

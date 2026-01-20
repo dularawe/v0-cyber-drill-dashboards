@@ -6,7 +6,7 @@ const router = Router()
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const questions: any[] = (await query("SELECT * FROM questions ORDER BY created_at DESC")) as any[]
+    const questions: any[] = (await query("SELECT id, text, category, difficulty, time_limit, hint, created_at FROM questions ORDER BY created_at DESC")) as any[]
 
     const questionsWithImages = await Promise.all(
       questions.map(async (q: any) => {
@@ -26,10 +26,10 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { text, category, difficulty, timeLimit, images } = req.body
+    const { text, category, difficulty, timeLimit, hint, images } = req.body
     const result: any = await query(
-      "INSERT INTO questions (text, category, difficulty, time_limit) VALUES (?, ?, ?, ?)",
-      [text, category, difficulty, timeLimit],
+      "INSERT INTO questions (text, category, difficulty, time_limit, hint) VALUES (?, ?, ?, ?, ?)",
+      [text, category, difficulty, timeLimit, hint || null],
     )
 
     if (images && Array.isArray(images) && images.length > 0) {
@@ -42,7 +42,7 @@ router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) 
       }
     }
 
-    res.json({ id: result.insertId, text, category, difficulty, timeLimit, images: images || [] })
+    res.json({ id: result.insertId, text, category, difficulty, timeLimit, hint: hint || null, images: images || [] })
   } catch (error) {
     console.log("[v0] Create question error:", error)
     res.status(500).json({ error: "Failed to create question" })
@@ -51,7 +51,7 @@ router.post("/", authMiddleware, adminOnly, async (req: Request, res: Response) 
 
 router.get("/:id", async (req: Request, res: Response) => {
   try {
-    const questions: any[] = (await query("SELECT * FROM questions WHERE id = ?", [req.params.id])) as any[]
+    const questions: any[] = (await query("SELECT id, text, category, difficulty, time_limit, hint, created_at FROM questions WHERE id = ?", [req.params.id])) as any[]
     if (questions.length === 0) {
       return res.status(404).json({ error: "Question not found" })
     }
@@ -69,12 +69,13 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Response) => {
   try {
-    const { text, category, difficulty, time_limit, images } = req.body
-    await query("UPDATE questions SET text = ?, category = ?, difficulty = ?, time_limit = ? WHERE id = ?", [
+    const { text, category, difficulty, time_limit, hint, images } = req.body
+    await query("UPDATE questions SET text = ?, category = ?, difficulty = ?, time_limit = ?, hint = ? WHERE id = ?", [
       text,
       category,
       difficulty,
       time_limit,
+      hint || null,
       req.params.id,
     ])
 
@@ -94,7 +95,7 @@ router.patch("/:id", authMiddleware, adminOnly, async (req: Request, res: Respon
       }
     }
 
-    res.json({ id: req.params.id, text, category, difficulty, time_limit, images: images || [] })
+    res.json({ id: req.params.id, text, category, difficulty, time_limit, hint: hint || null, images: images || [] })
   } catch (error) {
     res.status(500).json({ error: "Failed to update question" })
   }

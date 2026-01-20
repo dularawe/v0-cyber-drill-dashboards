@@ -174,7 +174,7 @@ export default function SuperAdminDashboard() {
   return (
     <>
       <DashboardHeader
-        title="Super Admin Dashboard"
+        title="Cyber Drill Master Control"
         status={sessionActive ? "Session Active" : "Ready"}
         userRole="Super Admin"
       />

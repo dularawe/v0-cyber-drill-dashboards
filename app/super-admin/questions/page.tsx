@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit2, Trash2, X, Upload, Trash } from "lucide-react"
+import { Plus, Edit2, Trash2, X, Upload, Trash, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardHeader } from "@/components/dashboard-header"
@@ -22,6 +22,7 @@ interface Question {
   category: string
   difficulty: "easy" | "medium" | "hard"
   timeLimit: number
+  hint?: string
   images?: QuestionImage[]
 }
 
@@ -36,6 +37,7 @@ export default function QuestionsPage() {
     category: "Security Awareness",
     difficulty: "easy" as const,
     timeLimit: 180,
+    hint: "",
     images: [] as QuestionImage[],
   })
 
@@ -93,6 +95,7 @@ export default function QuestionsPage() {
         category: "Security Awareness",
         difficulty: "easy",
         timeLimit: 180,
+        hint: "",
         images: [],
       })
       setShowAddModal(false)
@@ -131,6 +134,7 @@ export default function QuestionsPage() {
       category: question.category,
       difficulty: question.difficulty,
       timeLimit: question.timeLimit,
+      hint: question.hint || "",
       images: question.images?.map((img) => ({ ...img, preview: img.data })) || [],
     })
     setShowEditModal(true)
@@ -229,6 +233,12 @@ export default function QuestionsPage() {
                         <p className="text-muted-foreground">
                           <strong>Images:</strong> {question.images?.length || 0}/5
                         </p>
+                        {question.hint && (
+                          <p className="text-muted-foreground flex items-center gap-1">
+                            <Lightbulb className="h-4 w-4 text-yellow-500" />
+                            <strong>Hint:</strong> {question.hint.substring(0, 50)}{question.hint.length > 50 ? "..." : ""}
+                          </p>
+                        )}
                       </div>
                       {question.images && question.images.length > 0 && (
                         <div className="mt-4 grid grid-cols-5 gap-2">
@@ -338,6 +348,18 @@ export default function QuestionsPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Hint (Optional)</label>
+                  <textarea
+                    value={formData.hint}
+                    onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
+                    placeholder="Enter a helpful hint for participants..."
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    rows={2}
+                  />
+                  <p className="text-xs text-muted-foreground">This hint will be shown to participants when they click the lightbulb icon.</p>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Question Images (Max 5)</label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
@@ -347,9 +369,9 @@ export default function QuestionsPage() {
                       onChange={handleImageUpload}
                       disabled={formData.images.length >= 5}
                       className="hidden"
-                      id="image-upload"
+                      id="image-upload-add"
                     />
-                    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <label htmlFor="image-upload-add" className="cursor-pointer flex flex-col items-center gap-2">
                       <Upload className="h-5 w-5 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
                         Click to upload images ({formData.images.length}/5)
@@ -464,6 +486,18 @@ export default function QuestionsPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Hint (Optional)</label>
+                  <textarea
+                    value={formData.hint}
+                    onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
+                    placeholder="Enter a helpful hint for participants..."
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    rows={2}
+                  />
+                  <p className="text-xs text-muted-foreground">This hint will be shown to participants when they click the lightbulb icon.</p>
                 </div>
 
                 <div className="space-y-2">

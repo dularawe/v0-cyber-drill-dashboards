@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Send, AlertCircle, Clock, CheckCircle2, Bell } from "lucide-react"
+import { Send, AlertCircle, Clock, CheckCircle2, Bell, Lightbulb, X } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
@@ -16,6 +16,7 @@ interface Question {
   content: string
   status: "pending" | "submitted" | "approved" | "rejected"
   timeLimit: number
+  hint?: string
 }
 
 interface Session {
@@ -47,12 +48,14 @@ export default function LeaderDashboard() {
   const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showHintPopup, setShowHintPopup] = useState(false)
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: "q-1",
     number: 1,
     content: "Loading question...",
     status: "pending",
     timeLimit: 300,
+    hint: "",
   })
 
   useEffect(() => {
@@ -139,12 +142,14 @@ export default function LeaderDashboard() {
   const moveToNextQuestion = () => {
     setQuestionTimeRemaining(300)
     setIsQuestionExpired(false)
+    setShowHintPopup(false)
     setCurrentQuestion({
       id: "q-2",
       number: 2,
       content: "What are the main components of a security incident response plan?",
       status: "pending",
       timeLimit: 300,
+      hint: "Consider the phases: Preparation, Identification, Containment, Eradication, Recovery, and Lessons Learned.",
     })
   }
 
@@ -215,9 +220,41 @@ export default function LeaderDashboard() {
           </div>
 
           <Card className="flex-1 border-border bg-card flex flex-col overflow-hidden">
-            <CardHeader className="border-b border-border">
+            <CardHeader className="border-b border-border flex flex-row items-center justify-between">
               <CardTitle>Question {currentQuestion.number}</CardTitle>
+              {currentQuestion.hint && (
+                <button
+                  type="button"
+                  onClick={() => setShowHintPopup(!showHintPopup)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-100 hover:bg-yellow-200 text-yellow-700 transition-colors"
+                  title="View Hint"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  <span className="text-sm font-medium">Hint</span>
+                </button>
+              )}
             </CardHeader>
+
+            {/* Hint Popup */}
+            {showHintPopup && currentQuestion.hint && (
+              <div className="mx-4 mt-2 p-4 rounded-lg bg-yellow-50 border border-yellow-200 relative">
+                <button
+                  type="button"
+                  onClick={() => setShowHintPopup(false)}
+                  className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-800 mb-1">Hint</p>
+                    <p className="text-sm text-yellow-700">{currentQuestion.hint}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <CardContent className="flex-1 overflow-y-auto p-4">
               <p className="text-base text-foreground">{currentQuestion.content}</p>
             </CardContent>
