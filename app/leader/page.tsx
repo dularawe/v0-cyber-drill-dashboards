@@ -8,7 +8,7 @@ import { CountdownBanner } from "@/components/countdown-banner"
 import { StatChip } from "@/components/stat-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { submitAnswer, getDrillSessions, getNotifications } from "@/lib/api-client"
+import { submitAnswer, getDrillSessions, getNotifications, getQuestions } from "@/lib/api-client"
 
 interface Question {
   id: string
@@ -49,6 +49,8 @@ export default function LeaderDashboard() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showHintPopup, setShowHintPopup] = useState(false)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: "q-1",
     number: 1,
@@ -67,32 +69,59 @@ export default function LeaderDashboard() {
   }, [router])
 
   useEffect(() => {
+    // Reduced frequency to 5 seconds to prevent excessive API calls
     const sessionInterval = setInterval(() => {
       fetchActiveSession()
-    }, 3000)
+    }, 5000)
     return () => clearInterval(sessionInterval)
   }, [])
 
   useEffect(() => {
+    // Reduced frequency to 10 seconds for notifications
     const notificationInterval = setInterval(() => {
       fetchNotifications()
-    }, 2000)
+    }, 10000)
     return () => clearInterval(notificationInterval)
   }, [])
 
   const fetchActiveSession = async () => {
     try {
       const sessions = await getDrillSessions()
-      const active = sessions.find((s: any) => s.status === "live")
+      const active = sessions.find((s: any) => s.status === "running")
       if (active) {
         setCurrentSession(active)
         setSessionActive(true)
         calculateTimeRemaining(active.end_time)
+        // Fetch questions when session is found
+        fetchQuestions()
       } else {
         setSessionActive(false)
       }
     } catch (error) {
       console.error("[v0] Error fetching session:", error)
+    }
+  }
+
+  const fetchQuestions = async () => {
+    try {
+      const questionsData = await getQuestions()
+      if (questionsData && questionsData.length > 0) {
+        const mappedQuestions = questionsData.map((q: any, idx: number) => ({
+          id: q.id.toString(),
+          number: idx + 1,
+          content: q.text,
+          status: "pending" as const,
+          timeLimit: q.time_limit || 300,
+          hint: q.hint || "",
+        }))
+        setQuestions(mappedQuestions)
+        if (mappedQuestions.length > 0 && currentQuestionIndex < mappedQuestions.length) {
+          setCurrentQuestion(mappedQuestions[currentQuestionIndex])
+          setQuestionTimeRemaining(mappedQuestions[currentQuestionIndex].timeLimit)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching questions:", error)
     }
   }
 
@@ -140,17 +169,26 @@ export default function LeaderDashboard() {
   }
 
   const moveToNextQuestion = () => {
-    setQuestionTimeRemaining(300)
-    setIsQuestionExpired(false)
     setShowHintPopup(false)
-    setCurrentQuestion({
-      id: "q-2",
-      number: 2,
-      content: "What are the main components of a security incident response plan?",
-      status: "pending",
-      timeLimit: 300,
-      hint: "Consider the phases: Preparation, Identification, Containment, Eradication, Recovery, and Lessons Learned.",
-    })
+    const nextIndex = currentQuestionIndex + 1
+    if (nextIndex < questions.length) {
+      setCurrentQuestionIndex(nextIndex)
+      const nextQuestion = questions[nextIndex]
+      setCurrentQuestion(nextQuestion)
+      setQuestionTimeRemaining(nextQuestion.timeLimit)
+      setIsQuestionExpired(false)
+    } else {
+      // All questions completed
+      setCurrentQuestion({
+        id: "completed",
+        number: questions.length + 1,
+        content: "Congratulations! You have completed all questions.",
+        status: "submitted",
+        timeLimit: 0,
+        hint: "",
+      })
+      setIsQuestionExpired(true)
+    }
   }
 
   const handleSubmitAnswer = async () => {

@@ -42,12 +42,10 @@ export default function XConDashboard() {
 
   useEffect(() => {
     fetchData()
-  }, [])
-
-  useEffect(() => {
+    // Reduce polling frequency to 5 seconds to prevent excessive re-renders
     const answersInterval = setInterval(() => {
       fetchData()
-    }, 2000)
+    }, 5000)
     return () => clearInterval(answersInterval)
   }, [])
 

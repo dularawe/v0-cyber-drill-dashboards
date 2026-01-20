@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { MessageCircle, CheckCircle2, Clock, Bell } from "lucide-react"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
@@ -12,31 +12,38 @@ export default function LeaderLayout({ children }: { children: React.ReactNode }
   const [unreadCount, setUnreadCount] = useState(0)
   const [isAllowed, setIsAllowed] = useState(false)
   const [loading, setLoading] = useState(true)
+  const isAllowedRef = useRef(false)
+  const hasCheckedOnce = useRef(false)
 
-  useEffect(() => {
-    checkDrillStatus()
-    const interval = setInterval(checkDrillStatus, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const checkDrillStatus = async () => {
+  const checkDrillStatus = useCallback(async () => {
     try {
       const sessions = await getDrillSessions()
       const activeDrill = sessions.find((s: any) => s.status === "running")
 
       if (activeDrill) {
-        setIsAllowed(true)
-      } else if (isAllowed) {
-        // Only redirect if we previously allowed access, meaning drill status changed
+        if (!isAllowedRef.current) {
+          isAllowedRef.current = true
+          setIsAllowed(true)
+        }
+      } else if (isAllowedRef.current && hasCheckedOnce.current) {
+        // Only redirect if we previously had access and drill ended
+        isAllowedRef.current = false
         setIsAllowed(false)
         router.push("/landing")
       }
+      hasCheckedOnce.current = true
     } catch (error) {
       console.error("[v0] Error checking drill status:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    checkDrillStatus()
+    const interval = setInterval(checkDrillStatus, 5000) // Reduced frequency to 5 seconds
+    return () => clearInterval(interval)
+  }, [checkDrillStatus])
 
   const sidebarItems = [
     {
