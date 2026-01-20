@@ -29,7 +29,15 @@ export function DashboardHeader({ title, status, userRole }: DashboardHeaderProp
           />
           <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
           {status && (
-            <span className="ml-4 px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+            <span
+              className={`ml-4 px-3 py-1 rounded-full text-xs font-medium ${
+                status === "Active"
+                  ? "bg-green-100 text-green-700"
+                  : status === "Waiting"
+                    ? "bg-gray-100 text-gray-600"
+                    : "bg-secondary text-secondary-foreground"
+              }`}
+            >
               {status}
             </span>
           )}

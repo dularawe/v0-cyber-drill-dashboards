@@ -80,7 +80,7 @@ export async function signOutUser() {
 // Questions
 export async function getQuestions() {
   try {
-    const response = await fetch(`${API_BASE}/questions`)
+    const response = await fetchWithAuth(`${API_BASE}/questions`)
     if (!response.ok) throw new Error("Failed to fetch questions")
     return response.json()
   } catch (error) {

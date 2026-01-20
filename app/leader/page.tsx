@@ -84,10 +84,30 @@ export default function LeaderDashboard() {
     return () => clearInterval(notificationInterval)
   }, [])
 
+  // Session time countdown
+  useEffect(() => {
+    if (!sessionActive || timeRemaining <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setSessionActive(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [sessionActive, timeRemaining])
+
   const fetchActiveSession = async () => {
     try {
+      console.log("[v0] Fetching active session...")
       const sessions = await getDrillSessions()
+      console.log("[v0] Sessions received:", sessions)
       const active = sessions.find((s: any) => s.status === "running")
+      console.log("[v0] Active session:", active)
       if (active) {
         setCurrentSession(active)
         setSessionActive(true)
@@ -95,6 +115,7 @@ export default function LeaderDashboard() {
         // Fetch questions when session is found
         fetchQuestions()
       } else {
+        console.log("[v0] No active session found")
         setSessionActive(false)
       }
     } catch (error) {
@@ -104,7 +125,9 @@ export default function LeaderDashboard() {
 
   const fetchQuestions = async () => {
     try {
+      console.log("[v0] Fetching questions...")
       const questionsData = await getQuestions()
+      console.log("[v0] Questions data received:", questionsData)
       if (questionsData && questionsData.length > 0) {
         const mappedQuestions = questionsData.map((q: any, idx: number) => ({
           id: q.id.toString(),
@@ -114,11 +137,14 @@ export default function LeaderDashboard() {
           timeLimit: q.time_limit || 300,
           hint: q.hint || "",
         }))
+        console.log("[v0] Mapped questions:", mappedQuestions)
         setQuestions(mappedQuestions)
         if (mappedQuestions.length > 0 && currentQuestionIndex < mappedQuestions.length) {
           setCurrentQuestion(mappedQuestions[currentQuestionIndex])
           setQuestionTimeRemaining(mappedQuestions[currentQuestionIndex].timeLimit)
         }
+      } else {
+        console.log("[v0] No questions found or empty array")
       }
     } catch (error) {
       console.error("[v0] Error fetching questions:", error)
@@ -226,7 +252,7 @@ export default function LeaderDashboard() {
     <main className="flex-1 flex flex-col overflow-hidden">
       <DashboardHeader
         title={currentSession?.name || "Cyber Drill Exercise"}
-        status={sessionActive ? "In Progress" : "Waiting"}
+        status={sessionActive ? "Active" : "Waiting"}
         userRole="Participant"
       />
       <CountdownBanner isActive={sessionActive} secondsRemaining={timeRemaining} />
